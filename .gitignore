@@ -9,3 +9,8 @@ captures/
 .cxx
 *.apk
 *.keystore
+
+# Google OAuth exports and API keys: never commit, this repo is public.
+api-key.txt
+client_secret_*.json
+google-services.json
