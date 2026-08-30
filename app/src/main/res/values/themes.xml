@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Ardoise" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/slate_deep</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:colorAccent">@color/ochre</item>
+    </style>
+</resources>

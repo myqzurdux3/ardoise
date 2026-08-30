@@ -1,0 +1,66 @@
+package fr.ardoise.tasks.ui
+
+import android.Manifest
+import android.content.IntentSender
+import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import fr.ardoise.tasks.ui.theme.ArdoiseTheme
+
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        setContent {
+            ArdoiseTheme {
+                val model: HomeViewModel = viewModel()
+                val state by model.state.collectAsState()
+                val consent by model.consentRequest.collectAsState()
+
+                val consentLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                    ActivityResultContracts.StartIntentSenderForResult()
+                ) { result -> model.onConsentResult(result.data) }
+
+                val notificationLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { model.onNotificationPermissionResult() }
+
+                LaunchedEffect(consent) {
+                    val pending = consent ?: return@LaunchedEffect
+                    try {
+                        consentLauncher.launch(IntentSenderRequest.Builder(pending.intentSender).build())
+                    } catch (error: IntentSender.SendIntentException) {
+                        model.consentLaunchFailed()
+                    }
+                }
+
+                HomeScreen(
+                    state = state,
+                    onSignIn = model::signIn,
+                    onSelectList = model::selectList,
+                    onMaxTasks = model::setMaxTasks,
+                    onSyncInterval = model::setSyncInterval,
+                    onNotificationToggle = model::setNotificationEnabled,
+                    onWallpaperToggle = model::setWallpaperEnabled,
+                    onRefresh = model::refreshNow,
+                    onRequestNotificationPermission = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    },
+                    onMessageShown = model::dismissMessage,
+                )
+            }
+        }
+    }
+}
