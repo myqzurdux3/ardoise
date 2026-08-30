@@ -165,8 +165,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun dismissMessage() = transient.update { it.copy(message = null) }
 
-    fun onNotificationPermissionResult() {
-        transient.update { it.copy() }
+    /**
+     * Re-reads the state Android owns: the notification permission, which the
+     * user can flip in system settings while the app sits in the background.
+     *
+     * [MutableStateFlow] conflates equal values, so re-emitting a copy of the
+     * same state would be swallowed; the counter forces the emission.
+     */
+    fun refreshSystemState() {
+        transient.update { it.copy(permissionEpoch = it.permissionEpoch + 1) }
         viewModelScope.launch { redrawFromCache() }
     }
 
@@ -197,6 +204,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val authorized: Boolean = false,
         val busy: Boolean = false,
         val message: String? = null,
+        /** Bumped to force a re-read of state Android owns, not this class. */
+        val permissionEpoch: Int = 0,
     )
 
     private fun MutableStateFlow<TransientState>.update(block: (TransientState) -> TransientState) {
