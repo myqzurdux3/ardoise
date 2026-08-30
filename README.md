@@ -157,6 +157,19 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew :app:installDebug
 ```
 
+Cette étape n'est pas contournable, et ce n'est pas faute d'avoir cherché. Les
+deux voies d'authentification de Google exigent l'enregistrement, vérifié sur
+appareil :
+
+| Voie | Résultat |
+|---|---|
+| `AuthorizationClient` (Google Identity Services) | `ApiException 8` — `UNREGISTERED_ON_API_CONSOLE` |
+| `GoogleAuthUtil.getToken` (gestionnaire de comptes, antérieur à GIS) | `GoogleAuthException: UnregisteredOnApiConsole` |
+
+L'ancienne voie ne réclamait historiquement aucun identifiant client. Ce n'est
+plus vrai. Un repli complet a été écrit, essayé sur un Pixel 9a avec un compte
+réel, puis retiré.
+
 **Si Ardoise refuse la connexion**
 
 Juste après le choix du compte, Google rejette une application dont le couple

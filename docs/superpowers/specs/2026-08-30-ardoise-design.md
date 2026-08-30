@@ -167,6 +167,25 @@ Deux garde-fous :
 
 ## Contraintes à assumer
 
+0. **L'enregistrement OAuth est incontournable.** Vérifié sur appareil : les
+   deux voies d'authentification de Google le réclament.
+
+   | Voie | Résultat |
+   |---|---|
+   | `AuthorizationClient` (Google Identity Services) | `ApiException 8` — `UNREGISTERED_ON_API_CONSOLE` |
+   | `GoogleAuthUtil.getToken` (gestionnaire de comptes, antérieur à GIS) | `GoogleAuthException: UnregisteredOnApiConsole` |
+
+   L'ancienne voie ne demandait historiquement aucun identifiant client ; ce
+   n'est plus vrai. Une implémentation de repli complète a été écrite, essayée
+   sur un Pixel 9a avec un compte Google réel, puis retirée — elle échoue à la
+   même cause.
+
+   Conséquence : **aucune version distribuable ne peut fonctionner clé en
+   main.** Chaque personne qui installe Ardoise doit enregistrer son propre
+   identifiant OAuth pour son couple package + clé de signature. C'est une
+   contrainte de Google, pas un défaut de conception, et c'est ce qui justifie
+   l'écran « Configuration requise » affichant ces deux valeurs.
+
 1. **Vérification OAuth Google.** Le scope `tasks` est sensible. Publier
    sur le Play Store imposerait une vérification. En usage personnel,
    l'application reste en mode « test » sur la console Google Cloud et
