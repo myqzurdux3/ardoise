@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Declaring the shipped locales puts Ardoise in Settings > Apps > Ardoise >
+  Language on Android 13 and later, so a French phone can run the app in
+  English without changing the whole system language.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android"
+    android:defaultLocale="en">
+    <locale android:name="en" />
+    <locale android:name="fr" />
+</locale-config>

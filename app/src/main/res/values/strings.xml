@@ -4,7 +4,7 @@
   Ardoise has not been translated into. French lives in values-fr.
 -->
 <resources>
-    <string name="app_name">Ardoise</string>
+    <string name="app_name" translatable="false">Ardoise</string>
     <string name="tagline">Your tasks, on the lock screen</string>
 
     <!-- Google account -->

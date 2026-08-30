@@ -7,71 +7,197 @@
   <img src="https://img.shields.io/badge/Kotlin-2.1-1C1E21?style=flat-square&labelColor=C9884A" alt="Kotlin 2.1">
   <img src="https://img.shields.io/badge/Compose-Material%203-1C1E21?style=flat-square&labelColor=C9884A" alt="Jetpack Compose">
   <img src="https://img.shields.io/github/actions/workflow/status/myqzurdux3/ardoise/ci.yml?branch=main&style=flat-square&label=CI&labelColor=C9884A&color=1C1E21" alt="CI">
-  <img src="https://img.shields.io/badge/langues-EN%20%C2%B7%20FR-1C1E21?style=flat-square&labelColor=C9884A" alt="Anglais et français">
+  <img src="https://img.shields.io/badge/languages-EN%20%C2%B7%20FR-1C1E21?style=flat-square&labelColor=C9884A" alt="English and French">
   <img src="https://img.shields.io/badge/licence-MIT-1C1E21?style=flat-square&labelColor=C9884A" alt="MIT">
 </p>
 
 ---
 
-## Le problème
+## The problem
 
-Aucune application n'affiche une liste **Google Tasks** en permanence sur
-l'écran de verrouillage Android.
+No app keeps a **Google Tasks** list permanently on the Android lock screen.
 
-Les widgets d'écran de verrouillage de Google sont bridés en taille, en
-fréquence de rafraîchissement et en placement. Les applications de notes
-persistantes n'ont pas de synchronisation — vous recopiez à la main. Les
-applications de tâches qui ont, elles, une notification permanente ne se
-synchronisent pas avec Google Tasks.
+Google's lock screen widgets are capped in size, refresh rate and placement.
+Sticky-note apps have no sync — you retype everything by hand. The task apps
+that *do* have a permanent notification don't sync with Google Tasks.
 
-## L'intuition
+## The idea
 
-Sur Android, la surface réellement « toujours visible » de l'écran de
-verrouillage **n'est pas le widget**. C'est la notification, et
-accessoirement le fond d'écran.
+On Android, the surface that is genuinely always visible on the lock screen
+**is not the widget**. It is the notification, and secondarily the wallpaper.
 
-Une notification `ongoing` en `BigTextStyle` affiche six à huit lignes, accepte
-des boutons d'action, échappe au throttling des widgets et survit au
-redémarrage. Le fond d'écran de verrouillage, lui, est un `Bitmap` que
-l'application peut redessiner à volonté — contrôle typographique total.
+An `ongoing` notification in `BigTextStyle` shows six to eight lines, takes
+action buttons, escapes widget throttling and survives a reboot. The lock
+screen wallpaper is a `Bitmap` the app may redraw at will — full typographic
+control.
 
-Ardoise exploite ces deux surfaces à partir d'une source unique.
+Ardoise drives both surfaces from one source.
 
 <table>
   <tr>
-    <td width="42%" align="center"><img src="art/screen-lockscreen.png" alt="Écran de verrouillage" width="300"></td>
+    <td width="42%" align="center"><img src="art/screen-lockscreen.png" alt="Lock screen" width="300"></td>
     <td width="58%" valign="middle">
-      <img src="art/screen-notification.png" alt="Notification dépliée" width="420">
+      <img src="art/screen-notification.png" alt="Expanded notification" width="420">
       <br><br>
-      <sub>À gauche, les deux surfaces ensemble sur l'écran verrouillé : la
-      notification en haut, le rendu du fond d'écran en dessous. À droite, la
-      notification dépliée — six lignes, les retards signalés, et les deux
-      actions accessibles sans déverrouiller.</sub>
+      <sub>Left: both surfaces at once on the lock screen — the notification on
+      top, the rendered wallpaper beneath it. Right: the notification expanded —
+      six lines, overdue items flagged, and both actions reachable without
+      unlocking.</sub>
     </td>
   </tr>
 </table>
 
-<sub>Captures réelles, Pixel 9a sous Android 16 (API 37).</sub>
+<sub>Real screenshots, Pixel 9a on Android 16 (API 37).</sub>
 
-## Ce que fait Ardoise
+## What Ardoise does
 
-- Affiche la liste Google Tasks de votre choix, en continu, sur l'écran de
-  verrouillage.
-- Marque les tâches en retard, en ocre.
-- Permet de cocher la première tâche **depuis l'écran verrouillé**, sans
-  déverrouiller le téléphone.
-- Continue de fonctionner hors ligne et après un redémarrage, à partir d'un
-  cache local.
-- Ne stocke **aucun jeton d'accès** et ne contient **aucun secret client**.
-  Rien ne quitte votre téléphone, sauf les appels à l'API Google.
-- Parle **anglais et français**, en suivant la langue du système. L'anglais
-  est la locale par défaut, donc le repli pour toute autre langue.
+- Keeps the Google Tasks list of your choice on the lock screen, continuously.
+- Marks overdue tasks in ochre.
+- Lets you tick the first task off **from the locked screen**, without
+  unlocking the phone.
+- Keeps working offline and after a reboot, from a local cache.
+- Stores **no access token** and contains **no client secret**. Nothing leaves
+  your phone except the calls to Google's API.
+- Speaks **English and French**, following the system language. English is the
+  default locale, and therefore the fallback for every other language.
 
-## Ce qu'Ardoise ne fait pas
+## What Ardoise does not do
 
-Créer ou modifier des tâches, gérer les sous-tâches, les notes ou plusieurs
-comptes. L'application Google Tasks fait déjà tout cela très bien. Ardoise est
-une surface d'affichage, pas un gestionnaire de tâches.
+Create or edit tasks, handle subtasks, notes, or multiple accounts. The Google
+Tasks app already does all of that well. Ardoise is a display surface, not a
+task manager.
+
+---
+
+# Setting it up
+
+**This is the part that takes the time.** Read it once through before starting.
+
+## Why there is any setup at all
+
+Google will not issue a token for the Tasks API unless an OAuth client exists,
+in some Google Cloud project, for the exact **package name + signing
+certificate** of the app making the request. That binding is per-build, so no
+distributed copy of Ardoise can carry a working client for you. You register
+your own, once.
+
+There is no way around it, and not for lack of trying. Both of Google's
+authentication paths enforce it — verified on a real device with a real
+account:
+
+| Path | Result |
+|---|---|
+| `AuthorizationClient` (Google Identity Services) | `ApiException 8` — `UNREGISTERED_ON_API_CONSOLE` |
+| `GoogleAuthUtil.getToken` (account manager, predates GIS) | `GoogleAuthException: UnregisteredOnApiConsole` |
+
+The older path historically needed no client ID at all. That is no longer
+true. A complete fallback was written, driven through the account picker on a
+Pixel 9a, and then deleted.
+
+## 1. Build and install
+
+```bash
+git clone https://github.com/myqzurdux3/ardoise && cd ardoise
+echo "sdk.dir=$ANDROID_HOME" > local.properties
+./gradlew :app:installDebug
+```
+
+## 2. Get your two values
+
+Open Ardoise. It will tell you it is not registered and show a **Setup
+required** card carrying both values, each with a copy button. They are read
+from the running build, so they are always right for the copy you installed.
+
+You can also read the fingerprint yourself:
+
+```bash
+keytool -list -v -keystore ~/.android/debug.keystore \
+        -alias androiddebugkey -storepass android -keypass android | grep SHA1
+```
+
+The package name is `fr.ardoise.tasks` unless you changed `applicationId`.
+
+## 3. Register the client in Google Cloud Console
+
+Create a project at [console.cloud.google.com](https://console.cloud.google.com/),
+then, replacing `YOUR_PROJECT` in each link with its id:
+
+**a. Enable the Tasks API**
+
+`https://console.cloud.google.com/apis/library/tasks.googleapis.com?project=YOUR_PROJECT`
+
+Press **Enable**.
+
+**b. Configure the consent screen**
+
+`https://console.cloud.google.com/auth/branding?project=YOUR_PROJECT`
+
+Fill in an app name and your own email as the support contact. Audience type
+**External**.
+
+**c. Add yourself as a test user — do not skip this**
+
+`https://console.cloud.google.com/auth/audience?project=YOUR_PROJECT`
+
+Under **Test users**, add the Google account whose tasks you want to see. In
+testing mode Google refuses every account that is not on that list, with:
+
+> This app is being tested and can only be accessed by developer-approved
+> testers.
+
+There is no "developer" role to add yourself to; the list is called *Test
+users* and that is the one that matters. The support email higher up the page
+grants nothing.
+
+**d. Create the client**
+
+`https://console.cloud.google.com/auth/clients/create?project=YOUR_PROJECT`
+
+Application type **Android**. Then:
+
+| Field | Value |
+|---|---|
+| Package name | `fr.ardoise.tasks` |
+| SHA-1 certificate fingerprint | the fingerprint from step 2 |
+
+> **How to know you picked the right type.** An Android client offers **no
+> JSON download**, because it has no secret — it is bound to the package and
+> fingerprint instead. If the console offers you a `client_secret_*.json`, you
+> created a Web or Desktop client and it will never work here. A downloaded
+> file whose root key is `"installed"` is a Desktop client; `"web"` is a Web
+> client. Neither is what you want.
+
+Nothing from the console goes into this repository. Do not commit any
+`client_secret_*.json` or API key; both are gitignored for that reason.
+Ardoise needs **no API key** — the OAuth token alone authorises the calls.
+
+## 4. Allow the notification on the lock screen
+
+Changes take a few minutes to propagate. Then open Ardoise, press **Connect
+Google Tasks**, pick your account, and choose a list.
+
+Finally, in system settings:
+
+> **Settings → Notifications → Notifications on lock screen → Show all content**
+
+Without it, Android hides the notification text on the locked screen.
+
+## Troubleshooting
+
+| What you see | Cause | Fix |
+|---|---|---|
+| Setup required card; log shows `UNREGISTERED_ON_API_CONSOLE` | No **Android** client for this package + SHA-1 | Step 3d. Check the type is Android, and that the fingerprint is SHA-1 (40 hex characters), not SHA-256 (64) |
+| "This app is being tested and can only be accessed by developer-approved testers" | Your account is not a test user | Step 3c |
+| Account picker appears, then the app reports a refusal you never made | Google rejects *after* account selection, so the refusal looks like yours | Read the real cause under the `ArdoiseAuth` log tag: `adb logcat -s ArdoiseAuth` |
+| Connected, but the list is empty | A list is selected but genuinely has no open tasks, or none is selected yet | Pick a list in the app |
+| Sign-in works for a week, then stops | Testing-mode grants expire after 7 days | Reconnect, or publish the app (below) |
+
+**Publishing to avoid the weekly reconnection.** On the *Audience* page, press
+**Publish app**. Because `tasks` is a sensitive scope, an unverified published
+app shows a "Google hasn't verified this app" interstitial that you pass via
+*Advanced*. No verification review is required while you are the only user.
+
+---
 
 ## Architecture
 
@@ -83,154 +209,76 @@ une surface d'affichage, pas un gestionnaire de tâches.
   Data                  TasksApi (REST), AuthProvider, SettingsStore, SnapshotStore
 ```
 
-Les deux moteurs de rendu consomment le même `RenderSnapshot` et ne connaissent
-ni le réseau, ni l'authentification, ni le stockage.
+Both renderers consume the same `RenderSnapshot` and know nothing of the
+network, of authentication, or of storage.
 
-| Choix | Pourquoi |
+| Choice | Why |
 |---|---|
-| Client REST maison | `google-api-services-tasks` est lourd et pénible sur Android. Trois appels suffisent. |
-| Google Identity Services | Renvoie un jeton frais à chaque appel : rien à stocker, rien à rafraîchir, pas de serveur. |
-| `WorkManager` en polling | L'API Google Tasks n'offre ni webhook ni push. Le polling n'est pas un raccourci, c'est la seule option. |
-| Snapshot JSON, pas de base | Une cinquantaine de lignes de texte, toujours lues d'un bloc. Room serait de l'ingénierie excessive. |
+| Hand-rolled REST client | `google-api-services-tasks` is heavy and awkward on Android. Three calls are enough. |
+| Google Identity Services | Returns a fresh token on every call: nothing to store, nothing to refresh, no server. |
+| `WorkManager` polling | The Google Tasks API offers neither webhooks nor push. Polling is not a shortcut, it is the only option. |
+| A JSON snapshot, not a database | Fifty lines of text, always read as a whole. Room would be over-engineering. |
 
-## Deux pièges que seul l'appareil révèle
+## Two traps only a device reveals
 
-Les tests unitaires passaient, l'écran verrouillé donnait tort au code. Les
-deux corrections qui suivent viennent d'une exécution réelle, pas d'une revue.
+The unit tests passed and the lock screen proved the code wrong. Both fixes
+below came from running it, not from review.
 
-**1. `IMPORTANCE_LOW` détruit la fonctionnalité.**
-C'est le choix qui semble évident pour une notification permanente et
-silencieuse. Mais Android classe `LOW` parmi les notifications « silencieuses »
-et les **réduit à une simple pastille** sur l'écran de verrouillage : plus une
-seule ligne de texte ne survit. La bonne combinaison est `IMPORTANCE_DEFAULT`
-avec le son coupé au niveau du canal — toujours aucun son, aucune vibration,
-aucune bannière, mais la notification reste dépliable et prioritaire.
+**1. `IMPORTANCE_LOW` destroys the feature.**
+It is the obvious choice for a permanent, silent notification. But Android
+files `LOW` under "silent" notifications and **collapses them to a bare icon**
+on the lock screen — not one line of text survives. The right combination is
+`IMPORTANCE_DEFAULT` with the sound muted at channel level: still no sound, no
+vibration, no heads-up banner, but the notification stays expandable and ranked.
 
-**2. Le fond d'écran est demandé en double largeur.**
-Le système réclame ici un fond d'écran de 4848 × 2424 pour un écran de
-1080 × 2424 : la largeur est doublée pour le parallaxe de l'écran d'accueil.
-Un bitmap à la taille de l'écran s'y fait redimensionner et la composition
-casse. Passer un `visibleCropHint` couvrant tout le bitmap le fixe à l'écran.
+**2. The wallpaper is requested at double width.**
+The system here asks for a 4848 × 2424 wallpaper for a 1080 × 2424 screen —
+the width is doubled for home screen parallax. A screen-sized bitmap gets
+scaled to fill it and the composition breaks. Passing a `visibleCropHint`
+covering the whole bitmap pins it to the screen.
 
-## L'application
+## The app
 
 <p align="center">
-  <img src="art/screen-app.png" alt="Écran de réglages d'Ardoise" width="300">
+  <img src="art/screen-app.png" alt="Ardoise settings screen" width="300">
 </p>
 
-Un seul écran. Il montre en permanence un aperçu de ce que donnera l'écran de
-verrouillage — la seule façon honnête de régler une surface qu'on ne peut pas
-voir pendant qu'on la configure.
+One screen. It shows a live preview of what the lock screen will look like —
+the only honest way to tune a surface you cannot see while configuring it.
 
-## Installation
-
-Ardoise n'est pas sur le Play Store : le scope `tasks` est un scope sensible,
-dont la publication imposerait une vérification OAuth complète. Pour un usage
-personnel, on reste en mode « test » et on s'auto-autorise — aucune friction.
-
-**1. Créez un identifiant OAuth**
-
-Sur [Google Cloud Console](https://console.cloud.google.com/) :
-
-1. Créez un projet, puis activez l'**API Google Tasks**.
-2. Écran de consentement OAuth : type **Externe**, statut **Test**, et
-   ajoutez votre adresse Google dans *Utilisateurs de test*.
-3. Ajoutez le scope `https://www.googleapis.com/auth/tasks`.
-4. Créez un **ID client OAuth** de type **Android** :
-   - nom du package : `fr.ardoise.tasks`
-   - empreinte SHA-1 : celle de votre clé de signature
+## Development
 
 ```bash
-# empreinte SHA-1 de la clé de debug
-keytool -list -v -keystore ~/.android/debug.keystore \
-        -alias androiddebugkey -storepass android -keypass android
+./gradlew :app:testDebugUnitTest   # 38 unit tests
+./gradlew :app:assembleDebug       # debug APK
 ```
 
-Aucun fichier n'est à ajouter au dépôt : l'identifiant Android est associé au
-couple package + SHA-1 côté Google, pas embarqué dans l'application.
+The tests cover overdue calculation, API mapping, notification wording, the
+REST client (via `MockWebServer`), the signing fingerprint format, and
+wallpaper rendering (via Robolectric in native graphics mode).
 
-**2. Compilez et installez**
+The rest was verified on device: both surfaces on a real lock screen, the
+notification expanded with its actions, the permission warning clearing on
+resume, the switch to "offline" when a sync fails, and — on a physical Pixel 9a
+with a real Google account — the full authentication path through to reading
+live tasks.
 
-```bash
-git clone <ce-dépôt> && cd ardoise
-echo "sdk.dir=$ANDROID_HOME" > local.properties
-./gradlew :app:installDebug
-```
+## Known limits
 
-Cette étape n'est pas contournable, et ce n'est pas faute d'avoir cherché. Les
-deux voies d'authentification de Google exigent l'enregistrement, vérifié sur
-appareil :
+1. **Up to 30 minutes of latency** between a change made elsewhere and its
+   appearance. Inherent to polling; can be set to 15 minutes.
+2. **`FLAG_LOCK` is not honoured by every manufacturer.** The failure is
+   detected at runtime and the surface disables itself cleanly.
+3. **The lock screen wallpaper is replaced** when that surface is enabled. It
+   is off by default for exactly that reason.
 
-| Voie | Résultat |
-|---|---|
-| `AuthorizationClient` (Google Identity Services) | `ApiException 8` — `UNREGISTERED_ON_API_CONSOLE` |
-| `GoogleAuthUtil.getToken` (gestionnaire de comptes, antérieur à GIS) | `GoogleAuthException: UnregisteredOnApiConsole` |
+## The name
 
-L'ancienne voie ne réclamait historiquement aucun identifiant client. Ce n'est
-plus vrai. Un repli complet a été écrit, essayé sur un Pixel 9a avec un compte
-réel, puis retiré.
-
-**Si Ardoise refuse la connexion**
-
-Juste après le choix du compte, Google rejette une application dont le couple
-package + SHA-1 n'a pas d'identifiant OAuth. Play services le remonte comme un
-générique `8 INTERNAL_ERROR` et ne nomme la vraie cause,
-`UNREGISTERED_ON_API_CONSOLE`, que dans le message de statut — ce qui donne
-l'impression d'un refus de votre part alors que vous venez d'accepter.
-
-Ardoise reconnaît ce cas et affiche un encart **Configuration requise** avec le
-nom de package et l'empreinte SHA-1 de la version installée, lus depuis le
-`PackageManager` et prêts à copier. Ce sont exactement les deux valeurs à
-enregistrer à l'étape 1.
-
-**3. Réglez Android**
-
-Ouvrez Ardoise, connectez votre compte, choisissez une liste. Puis, dans les
-réglages système :
-
-> **Paramètres → Notifications → Notifications sur l'écran de verrouillage →
-> Afficher tout le contenu**
-
-Sans cela, Android masque le texte de la notification sur l'écran verrouillé.
-
-## Développement
-
-```bash
-./gradlew :app:testDebugUnitTest   # 30 tests unitaires
-./gradlew :app:assembleDebug       # APK de debug
-```
-
-Les tests couvrent le calcul des retards, le mapping de l'API, la rédaction de
-la notification, le client REST (via `MockWebServer`) et le rendu du fond
-d'écran (via Robolectric en mode graphique natif).
-
-Le reste a été vérifié sur un Pixel 9a émulé sous Android 16 : les deux
-surfaces affichées simultanément sur un vrai écran verrouillé, la notification
-dépliée avec ses actions, la carte d'avertissement qui disparaît au retour au
-premier plan après l'octroi de la permission, et le passage en « hors ligne »
-quand la synchronisation échoue.
-
-**Le chemin d'authentification n'a pas pu être testé de bout en bout** : il
-demande un identifiant OAuth Google réel et un compte connecté. Le reste de la
-chaîne a été validé en injectant un instantané directement dans le `DataStore`
-de l'application.
-
-## Limites assumées
-
-1. **Jusqu'à 30 minutes de latence** entre une modification faite ailleurs et
-   son affichage. Inhérent au polling ; réglable sur 15 minutes.
-2. **`FLAG_LOCK` n'est pas honoré par tous les constructeurs.** L'échec est
-   détecté à l'exécution et la surface se désactive proprement.
-3. **Le fond d'écran de verrouillage est remplacé** quand la surface est
-   activée. Elle est désactivée par défaut, précisément pour cette raison.
-
-## Nom
-
-Une ardoise, c'est une surface sombre où l'on écrit en clair, qu'on essuie et
-qu'on réécrit. C'est la description exacte d'un écran de verrouillage. La
-charte graphique en découle : charbon `#1C1E21`, craie `#F2EFE9`, ocre
-`#C9884A` pour ce qui a dépassé sa date.
+*Ardoise* is French for slate: a dark surface written on in light strokes,
+wiped and rewritten. That is the exact description of a lock screen. The
+palette follows — charcoal `#1C1E21`, chalk `#F2EFE9`, ochre `#C9884A` for
+whatever has slipped past its date.
 
 ## Licence
 
-MIT — voir [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
