@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Android-9%2B-1C1E21?style=flat-square&labelColor=C9884A" alt="Android 9+">
+  <img src="https://img.shields.io/badge/Android-10%2B-1C1E21?style=flat-square&labelColor=C9884A" alt="Android 10+">
   <img src="https://img.shields.io/badge/Kotlin-2.1-1C1E21?style=flat-square&labelColor=C9884A" alt="Kotlin 2.1">
   <img src="https://img.shields.io/badge/Compose-Material%203-1C1E21?style=flat-square&labelColor=C9884A" alt="Jetpack Compose">
   <img src="https://img.shields.io/github/actions/workflow/status/myqzurdux3/ardoise/ci.yml?branch=main&style=flat-square&label=CI&labelColor=C9884A&color=1C1E21" alt="CI">
