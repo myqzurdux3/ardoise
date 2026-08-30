@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="380" viewBox="0 0 1200 380" role="img" aria-label="Ardoise — vos tâches, sur l'écran de verrouillage">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1F2226"/>
+      <stop offset="0.6" stop-color="#17191C"/>
+      <stop offset="1" stop-color="#121416"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.22" cy="0.15" r="0.8">
+      <stop offset="0" stop-color="#33383E" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#33383E" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="phoneClip">
+      <rect x="880" y="52" width="232" height="276" rx="26"/>
+    </clipPath>
+    <radialGradient id="screenGlow" cx="0.24" cy="0.18" r="0.85">
+      <stop offset="0" stop-color="#2A2E33"/>
+      <stop offset="1" stop-color="#141618"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="380" fill="url(#bg)"/>
+  <rect width="1200" height="380" fill="url(#halo)"/>
+
+  <!-- mark -->
+  <g transform="translate(96 118)">
+    <rect width="108" height="108" rx="26" fill="#25282C"/>
+    <path d="M30 55 L44 69 L79 30" fill="none" stroke="#F2EFE9" stroke-width="9"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M32 86 L76 86" fill="none" stroke="#C9884A" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="248" y="168" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="62"
+        font-weight="500" letter-spacing="17" fill="#F2EFE9">ARDOISE</text>
+  <text x="252" y="212" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="21"
+        fill="#9A9791">Vos tâches Google Tasks, sur l'écran de verrouillage Android.</text>
+  <text x="252" y="254" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14"
+        letter-spacing="1.8" fill="#C9884A">NOTIFICATION PERSISTANTE  ·  FOND D'ÉCRAN</text>
+
+  <!-- phone -->
+  <rect x="876" y="48" width="240" height="284" rx="30" fill="#0D0F10" stroke="#F2EFE9" stroke-opacity="0.12"/>
+  <g clip-path="url(#phoneClip)">
+    <rect x="880" y="52" width="232" height="276" fill="#141618"/>
+    <rect x="880" y="52" width="232" height="276" fill="url(#screenGlow)"/>
+    <text x="906" y="118" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="44"
+          font-weight="300" fill="#F2EFE9">9:41</text>
+    <text x="907" y="140" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12"
+          fill="#9A9791">Dimanche 30 août</text>
+
+    <text x="907" y="182" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="10"
+          letter-spacing="3" fill="#C9884A">COURSES</text>
+    <line x1="907" y1="192" x2="965" y2="192" stroke="#F2EFE9" stroke-opacity="0.22"/>
+
+    <circle cx="910" cy="216" r="3" fill="#C9884A"/>
+    <text x="924" y="220" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#E0A870">Appeler la banque</text>
+    <circle cx="910" cy="244" r="3" fill="#9A9791"/>
+    <text x="924" y="248" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#F2EFE9">Acheter du pain</text>
+    <circle cx="910" cy="272" r="3" fill="#9A9791"/>
+    <text x="924" y="276" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" fill="#F2EFE9">Réserver le train</text>
+
+    <text x="907" y="312" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="9" fill="#9A9791" opacity="0.6">à 09:32</text>
+  </g>
+</svg>
