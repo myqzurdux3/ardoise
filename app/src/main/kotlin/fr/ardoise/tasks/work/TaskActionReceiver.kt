@@ -3,35 +3,26 @@ package fr.ardoise.tasks.work
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import fr.ardoise.tasks.ArdoiseGraph
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 /**
  * Handles the two notification buttons.
  *
  * Ticking a task off from the lock screen without unlocking the phone is the
  * whole point of using a notification rather than a widget.
+ *
+ * The receiver only enqueues: a broadcast receiver gets roughly ten seconds of
+ * runtime, and a call to Google on a poor mobile connection can outlast that.
+ * [SyncWorker] does the actual work under WorkManager's retry policy.
  */
 class TaskActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val graph = ArdoiseGraph.from(context)
-        val pending = goAsync()
+        when (intent.action) {
+            ACTION_COMPLETE -> intent.getStringExtra(EXTRA_TASK_ID)
+                ?.takeIf { it.isNotBlank() }
+                ?.let { SyncScheduler.completeNow(context, it) }
 
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            try {
-                when (intent.action) {
-                    ACTION_COMPLETE -> intent.getStringExtra(EXTRA_TASK_ID)
-                        ?.let { graph.repository.completeTask(it) }
-
-                    ACTION_REFRESH -> graph.repository.sync()
-                }
-            } finally {
-                pending.finish()
-            }
+            ACTION_REFRESH -> SyncScheduler.syncNow(context)
         }
     }
 
