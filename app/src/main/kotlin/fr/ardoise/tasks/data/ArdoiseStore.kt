@@ -63,6 +63,19 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setSyncIntervalMinutes(value: Int) = edit { it[KEY_SYNC_MINUTES] = value }
 
+    /**
+     * Diagnostic state, not a preference.
+     *
+     * Google only rejects an unregistered build after the account picker, so
+     * the silent probe on launch cannot detect it. Remembering the last verdict
+     * is what lets the setup card greet the user on the next launch instead of
+     * making them walk the whole flow again to see what is wrong.
+     */
+    val setupRequired: Flow<Boolean> =
+        context.ardoiseDataStore.data.map { it[KEY_SETUP_REQUIRED] ?: false }
+
+    suspend fun setSetupRequired(value: Boolean) = edit { it[KEY_SETUP_REQUIRED] = value }
+
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.ardoiseDataStore.edit(block)
     }
@@ -74,6 +87,7 @@ class SettingsStore(private val context: Context) {
         val KEY_NOTIFICATION = booleanPreferencesKey("notification_enabled")
         val KEY_WALLPAPER = booleanPreferencesKey("wallpaper_enabled")
         val KEY_SYNC_MINUTES = intPreferencesKey("sync_minutes")
+        val KEY_SETUP_REQUIRED = booleanPreferencesKey("setup_required")
     }
 }
 

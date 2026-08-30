@@ -50,8 +50,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             combine(
                 graph.settingsStore.settings,
                 graph.snapshotStore.snapshot,
+                graph.settingsStore.setupRequired,
                 transient,
-            ) { settings, snapshot, extra ->
+            ) { settings, snapshot, setupRequired, extra ->
                 HomeUiState(
                     settings = settings,
                     snapshot = snapshot,
@@ -59,7 +60,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     authorized = extra.authorized,
                     busy = extra.busy,
                     notificationsAllowed = notificationsAllowed(),
-                    setupRequired = extra.setupRequired,
+                    setupRequired = setupRequired,
                     message = extra.message,
                 )
             }.collect { _state.value = it }
@@ -67,17 +68,33 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         refreshAuthorization()
     }
 
-    /** Silent probe on launch: if consent already exists, the UI skips sign-in. */
+    /**
+     * Silent probe on launch: if consent already exists, the UI skips sign-in.
+     *
+     * A build with no OAuth client is reported here rather than waiting for the
+     * user to tap through the account picker first, since that is the blocking
+     * state and nothing else in the app can work until it is fixed.
+     */
     private fun refreshAuthorization() = viewModelScope.launch {
-        val token = graph.auth.silentToken()
-        transient.update { it.copy(authorized = token != null) }
-        if (token != null) loadLists()
+        when (val outcome = graph.auth.authorize()) {
+            is AuthProvider.Outcome.Granted -> {
+                graph.settingsStore.setSetupRequired(false)
+                transient.update { it.copy(authorized = true) }
+                loadLists()
+            }
+
+            is AuthProvider.Outcome.Failed ->
+                if (outcome.notRegistered) graph.settingsStore.setSetupRequired(true)
+
+            is AuthProvider.Outcome.ConsentRequired -> Unit
+        }
     }
 
     fun signIn() = viewModelScope.launch {
-        transient.update { it.copy(busy = true, message = null, setupRequired = false) }
+        transient.update { it.copy(busy = true, message = null) }
         when (val outcome = graph.auth.authorize()) {
             is AuthProvider.Outcome.Granted -> {
+                graph.settingsStore.setSetupRequired(false)
                 transient.update { it.copy(authorized = true, busy = false) }
                 loadLists()
             }
@@ -87,17 +104,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 _consentRequest.value = outcome.pendingIntent
             }
 
-            is AuthProvider.Outcome.Failed -> transient.update {
-                if (outcome.notRegistered) {
-                    it.copy(busy = false, setupRequired = true, message = str(R.string.msg_not_registered))
-                } else {
-                    val detail = if (outcome.detail == AuthProvider.NO_TOKEN) {
-                        str(R.string.msg_no_access_token)
-                    } else {
-                        outcome.detail
-                    }
-                    it.copy(busy = false, message = str(R.string.msg_sign_in_failed, detail))
+            is AuthProvider.Outcome.Failed -> {
+                if (outcome.notRegistered) graph.settingsStore.setSetupRequired(true)
+                val message = when {
+                    outcome.notRegistered -> str(R.string.msg_not_registered)
+                    outcome.detail == AuthProvider.NO_TOKEN ->
+                        str(R.string.msg_sign_in_failed, str(R.string.msg_no_access_token))
+
+                    else -> str(R.string.msg_sign_in_failed, outcome.detail)
                 }
+                transient.update { it.copy(busy = false, message = message) }
             }
         }
     }
@@ -117,26 +133,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val direct = data?.let { graph.auth.tokenFromConsent(it) }
             if (direct?.isSuccess == true || graph.auth.silentToken() != null) {
-                transient.update { it.copy(authorized = true, setupRequired = false) }
+                graph.settingsStore.setSetupRequired(false)
+                transient.update { it.copy(authorized = true) }
                 loadLists()
                 return@launch
             }
 
             val error = direct?.exceptionOrNull()
-            transient.update {
-                when {
-                    error != null && AuthProvider.isUnregistered(error) ->
-                        it.copy(setupRequired = true, message = str(R.string.msg_not_registered))
+            val unregistered = error != null && AuthProvider.isUnregistered(error)
+            if (unregistered) graph.settingsStore.setSetupRequired(true)
 
-                    resultCode == Activity.RESULT_CANCELED && data == null ->
-                        it.copy(message = str(R.string.msg_consent_cancelled))
+            val message = when {
+                unregistered -> str(R.string.msg_not_registered)
+                resultCode == Activity.RESULT_CANCELED && data == null ->
+                    str(R.string.msg_consent_cancelled)
 
-                    error != null ->
-                        it.copy(message = str(R.string.msg_consent_refused, error.message.orEmpty()))
-
-                    else -> it.copy(message = str(R.string.msg_consent_no_data))
-                }
+                error != null -> str(R.string.msg_consent_refused, error.message.orEmpty())
+                else -> str(R.string.msg_consent_no_data)
             }
+            transient.update { it.copy(message = message) }
         }
     }
 
@@ -248,7 +263,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val lists: List<TaskListDto> = emptyList(),
         val authorized: Boolean = false,
         val busy: Boolean = false,
-        val setupRequired: Boolean = false,
         val message: String? = null,
         /** Bumped to force a re-read of state Android owns, not this class. */
         val permissionEpoch: Int = 0,
