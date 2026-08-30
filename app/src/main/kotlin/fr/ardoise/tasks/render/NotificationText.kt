@@ -38,4 +38,21 @@ object NotificationText {
 
     fun title(snapshot: RenderSnapshot?): String =
         snapshot?.listTitle?.takeIf { it.isNotBlank() } ?: "Ardoise"
+
+    /**
+     * The one line that shows while the notification is collapsed.
+     *
+     * Android renders `BigTextStyle` collapsed on the lock screen until the
+     * user expands it, so this line has to carry a real task rather than a
+     * count -- otherwise the default state of the primary surface says nothing.
+     */
+    fun collapsedLine(snapshot: RenderSnapshot?, today: LocalDate): String {
+        val next = snapshot?.tasks?.firstOrNull() ?: return "Rien en attente."
+        val suffix = when {
+            next.isOverdue(today) -> "  $DOT en retard"
+            next.isDueToday(today) -> "  $DOT aujourd'hui"
+            else -> ""
+        }
+        return next.title + suffix
+    }
 }

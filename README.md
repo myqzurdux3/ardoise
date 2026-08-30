@@ -38,14 +38,19 @@ Ardoise exploite ces deux surfaces à partir d'une source unique.
 
 <table>
   <tr>
-    <td width="50%" align="center"><img src="art/surface-notification.svg" alt="Notification permanente" width="290"></td>
-    <td width="50%" align="center"><img src="art/surface-wallpaper.svg" alt="Fond d'écran de verrouillage" width="290"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Notification permanente</b><br><sub>Cochez une tâche sans déverrouiller.</sub></td>
-    <td align="center"><b>Fond d'écran de verrouillage</b><br><sub>Rendu maison, sous l'horloge système.</sub></td>
+    <td width="42%" align="center"><img src="art/screen-lockscreen.png" alt="Écran de verrouillage" width="300"></td>
+    <td width="58%" valign="middle">
+      <img src="art/screen-notification.png" alt="Notification dépliée" width="420">
+      <br><br>
+      <sub>À gauche, les deux surfaces ensemble sur l'écran verrouillé : la
+      notification en haut, le rendu du fond d'écran en dessous. À droite, la
+      notification dépliée — six lignes, les retards signalés, et les deux
+      actions accessibles sans déverrouiller.</sub>
+    </td>
   </tr>
 </table>
+
+<sub>Captures réelles, Pixel 9a sous Android 16 (API 37).</sub>
 
 ## Ce que fait Ardoise
 
@@ -84,6 +89,35 @@ ni le réseau, ni l'authentification, ni le stockage.
 | Google Identity Services | Renvoie un jeton frais à chaque appel : rien à stocker, rien à rafraîchir, pas de serveur. |
 | `WorkManager` en polling | L'API Google Tasks n'offre ni webhook ni push. Le polling n'est pas un raccourci, c'est la seule option. |
 | Snapshot JSON, pas de base | Une cinquantaine de lignes de texte, toujours lues d'un bloc. Room serait de l'ingénierie excessive. |
+
+## Deux pièges que seul l'appareil révèle
+
+Les tests unitaires passaient, l'écran verrouillé donnait tort au code. Les
+deux corrections qui suivent viennent d'une exécution réelle, pas d'une revue.
+
+**1. `IMPORTANCE_LOW` détruit la fonctionnalité.**
+C'est le choix qui semble évident pour une notification permanente et
+silencieuse. Mais Android classe `LOW` parmi les notifications « silencieuses »
+et les **réduit à une simple pastille** sur l'écran de verrouillage : plus une
+seule ligne de texte ne survit. La bonne combinaison est `IMPORTANCE_DEFAULT`
+avec le son coupé au niveau du canal — toujours aucun son, aucune vibration,
+aucune bannière, mais la notification reste dépliable et prioritaire.
+
+**2. Le fond d'écran est demandé en double largeur.**
+Le système réclame ici un fond d'écran de 4848 × 2424 pour un écran de
+1080 × 2424 : la largeur est doublée pour le parallaxe de l'écran d'accueil.
+Un bitmap à la taille de l'écran s'y fait redimensionner et la composition
+casse. Passer un `visibleCropHint` couvrant tout le bitmap le fixe à l'écran.
+
+## L'application
+
+<p align="center">
+  <img src="art/screen-app.png" alt="Écran de réglages d'Ardoise" width="300">
+</p>
+
+Un seul écran. Il montre en permanence un aperçu de ce que donnera l'écran de
+verrouillage — la seule façon honnête de régler une surface qu'on ne peut pas
+voir pendant qu'on la configure.
 
 ## Installation
 
@@ -139,9 +173,18 @@ Sans cela, Android masque le texte de la notification sur l'écran verrouillé.
 
 Les tests couvrent le calcul des retards, le mapping de l'API, la rédaction de
 la notification, le client REST (via `MockWebServer`) et le rendu du fond
-d'écran (via Robolectric en mode graphique natif). Le chemin
-d'authentification et l'écriture effective du fond d'écran se vérifient sur un
-appareil réel : ils dépendent des services Google Play et du système.
+d'écran (via Robolectric en mode graphique natif).
+
+Le reste a été vérifié sur un Pixel 9a émulé sous Android 16 : les deux
+surfaces affichées simultanément sur un vrai écran verrouillé, la notification
+dépliée avec ses actions, la carte d'avertissement qui disparaît au retour au
+premier plan après l'octroi de la permission, et le passage en « hors ligne »
+quand la synchronisation échoue.
+
+**Le chemin d'authentification n'a pas pu être testé de bout en bout** : il
+demande un identifiant OAuth Google réel et un compte connecté. Le reste de la
+chaîne a été validé en injectant un instantané directement dans le `DataStore`
+de l'application.
 
 ## Limites assumées
 

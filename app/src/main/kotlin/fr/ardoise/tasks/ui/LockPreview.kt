@@ -8,10 +8,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -63,7 +62,9 @@ fun LockPreview(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(0.74f)
+            // Grows with the list rather than holding a phone's aspect ratio:
+            // at six lines a fixed ratio leaves a third of the card empty.
+            .heightIn(min = 268.dp)
             .clip(shape)
             .background(
                 Brush.radialGradient(
@@ -75,7 +76,7 @@ fun LockPreview(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(horizontal = 26.dp, vertical = 26.dp)
         ) {
             Text(
@@ -135,7 +136,7 @@ fun LockPreview(
                 }
             }
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(26.dp))
 
             Text(
                 text = footerLabel(snapshot),

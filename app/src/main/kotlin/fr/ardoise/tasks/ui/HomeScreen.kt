@@ -273,6 +273,12 @@ private fun ToggleRow(
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                 checkedTrackColor = Ochre,
+                checkedBorderColor = Ochre,
+                // Left at defaults, an unchecked switch is a pale slab that
+                // pulls more attention than an enabled one.
+                uncheckedThumbColor = ChalkDim,
+                uncheckedTrackColor = MaterialTheme.colorScheme.background,
+                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
             ),
         )
     }

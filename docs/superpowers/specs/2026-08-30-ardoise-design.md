@@ -100,6 +100,13 @@ obligatoire** — c'est la contrainte principale du projet.
 synchronisation immédiate est également déclenchée à l'ouverture de
 l'application et après avoir coché une tâche.
 
+Les actions déclenchées depuis l'écran de verrouillage passent par le même
+worker plutôt que par le `BroadcastReceiver`. Un receiver ne dispose que d'une
+dizaine de secondes, même avec `goAsync()` ; un appel à Google sur une
+connexion mobile médiocre peut dépasser ce délai, et c'est précisément dans ces
+conditions que l'utilisateur appuie sur le bouton. Le receiver se contente
+d'empiler le travail.
+
 ### Persistance
 
 Pas de base de données. Le cache est un unique document JSON
@@ -111,13 +118,24 @@ au redémarrage, avant la première synchronisation.
 
 ### Rendu — notification
 
-Canal `ardoise_tasks`, importance `LOW` (pas de son, pas de bandeau).
-`ongoing = true`, `showWhen = false`, catégorie `REMINDER`, visibilité
-`PUBLIC`.
+Canal `ardoise_tasks_visible`, importance **`DEFAULT`**, son coupé au niveau
+du canal. `ongoing = true`, `showWhen = false`, catégorie `REMINDER`,
+visibilité `PUBLIC`.
+
+> **Corrigé après essai sur appareil.** `IMPORTANCE_LOW` était le choix
+> initial, et il annulait la fonctionnalité : Android range `LOW` parmi les
+> notifications silencieuses et les réduit à une pastille sur l'écran de
+> verrouillage, sans aucun texte. `DEFAULT` avec `setSound(null, null)` donne
+> le même silence tout en gardant la notification visible et dépliable.
 
 `BigTextStyle` : une tâche par ligne, préfixée d'une puce. Les tâches en
 retard sont marquées. Deux actions : « Terminer » (la première tâche) et
 « Actualiser ».
+
+Sur l'écran de verrouillage, la notification s'affiche **repliée** jusqu'à ce
+que l'utilisateur la déplie. La ligne repliée porte donc la prochaine tâche,
+pas un simple compteur ; le décompte passe en `subText`, dans la ligne
+d'en-tête.
 
 Reprogrammée au démarrage via un `BroadcastReceiver` sur
 `BOOT_COMPLETED`.
@@ -130,6 +148,14 @@ FLAG_LOCK)`.
 Le rendu réserve le tiers supérieur de l'écran (horloge système) et
 compose la liste en dessous. Palette ardoise : fond charbon, texte craie,
 accent ocre pour les échéances dépassées.
+
+> **Corrigé après essai sur appareil.** Le système réclame un fond d'écran de
+> 4848 × 2424 pour un écran de 1080 × 2424 — la largeur est doublée pour le
+> parallaxe de l'écran d'accueil. Sans indication, un bitmap à la taille de
+> l'écran s'y fait redimensionner et la composition casse. `setBitmap` reçoit
+> donc un `visibleCropHint` couvrant tout le bitmap. Le pied de page a par
+> ailleurs été remonté à 90 % de la hauteur : à 94,5 % il passait sous la
+> barre de gestes.
 
 Deux garde-fous :
 

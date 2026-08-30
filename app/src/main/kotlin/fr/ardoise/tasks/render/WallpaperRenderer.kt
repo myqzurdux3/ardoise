@@ -2,6 +2,7 @@ package fr.ardoise.tasks.render
 
 import android.app.WallpaperManager
 import android.content.Context
+import android.graphics.Rect
 import android.os.Build
 import android.util.Log
 import android.view.WindowManager
@@ -35,7 +36,13 @@ class WallpaperRenderer(
 
         return try {
             val bitmap = WallpaperCanvas.render(snapshot, width, height, today)
-            manager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
+            // Without an explicit crop hint the system falls back to
+            // getDesiredMinimumWidth(), which is twice the screen width so the
+            // home screen can parallax. A screen-sized bitmap then gets scaled
+            // to fill it, and the composition breaks. Naming the whole bitmap
+            // as the visible region pins it to the screen instead.
+            val crop = Rect(0, 0, bitmap.width, bitmap.height)
+            manager.setBitmap(bitmap, crop, true, WallpaperManager.FLAG_LOCK)
             bitmap.recycle()
             snapshotStore.setLastWallpaperKey(key)
             true

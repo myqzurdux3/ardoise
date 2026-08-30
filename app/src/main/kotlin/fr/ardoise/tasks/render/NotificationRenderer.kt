@@ -23,19 +23,30 @@ import java.time.LocalDate
 class NotificationRenderer(private val context: Context) {
 
     fun ensureChannel() {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+
+        // IMPORTANCE_LOW looks like the obvious choice for a silent, permanent
+        // notification -- and it defeats the point. Android files LOW under
+        // "silent" and collapses it to a bare icon on the lock screen, so none
+        // of the task text survives. DEFAULT keeps the notification expanded
+        // there; the noise is removed by muting the channel instead, which
+        // still leaves no sound, no vibration and no heads-up banner.
         val channel = NotificationChannel(
             CHANNEL_ID,
             "Tâches sur l'écran de verrouillage",
-            // LOW: permanently visible, never a sound or a heads-up banner.
-            NotificationManager.IMPORTANCE_LOW,
+            NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
             description = "Affiche en continu la liste de tâches choisie."
             setShowBadge(false)
+            setSound(null, null)
             enableVibration(false)
-            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            enableLights(false)
         }
-        context.getSystemService(NotificationManager::class.java)
-            ?.createNotificationChannel(channel)
+        manager.createNotificationChannel(channel)
+
+        // A channel's importance is fixed once created, so the muted LOW
+        // channel shipped earlier has to be retired rather than edited.
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
     }
 
     fun render(snapshot: RenderSnapshot?, today: LocalDate = LocalDate.now()) {
@@ -46,8 +57,15 @@ class NotificationRenderer(private val context: Context) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(NotificationText.title(snapshot))
-            .setContentText(NotificationText.summary(snapshot, today))
-            .setStyle(NotificationCompat.BigTextStyle().bigText(NotificationText.body(snapshot, today)))
+            // Collapsed on the lock screen: the next task, not a bare count.
+            .setContentText(NotificationText.collapsedLine(snapshot, today))
+            // In the header line, so the count survives expansion either way.
+            .setSubText(NotificationText.summary(snapshot, today))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .setBigContentTitle(NotificationText.title(snapshot))
+                    .bigText(NotificationText.body(snapshot, today))
+            )
             .setColor(ArdoisePalette.OCHRE)
             .setOngoing(true)
             .setShowWhen(false)
@@ -98,7 +116,8 @@ class NotificationRenderer(private val context: Context) {
     }
 
     companion object {
-        const val CHANNEL_ID = "ardoise_tasks"
+        const val CHANNEL_ID = "ardoise_tasks_visible"
+        private const val LEGACY_CHANNEL_ID = "ardoise_tasks"
         const val NOTIFICATION_ID = 1001
         private const val REQUEST_OPEN = 900
     }

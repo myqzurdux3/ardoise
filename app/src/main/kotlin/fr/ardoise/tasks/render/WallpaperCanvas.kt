@@ -33,6 +33,8 @@ object WallpaperCanvas {
     private const val TASK_SIZE = 0.0205f
     private const val FOOTER_SIZE = 0.0125f
     private const val BULLET_RADIUS = 0.0026f
+    /** Clear of the gesture bar, which sits over the bottom of the wallpaper. */
+    private const val FOOTER_BASELINE = 0.90f
 
     fun render(
         snapshot: RenderSnapshot?,
@@ -160,7 +162,7 @@ object WallpaperCanvas {
                 .format(DateTimeFormatter.ofPattern("HH:mm"))
             if (snapshot.stale) "hors ligne, $time" else "à $time"
         }
-        canvas.drawText(stamp, margin, height * 0.945f, paint)
+        canvas.drawText(stamp, margin, height * FOOTER_BASELINE, paint)
     }
 
     private fun textPaint(size: Float, color: Int, family: String): TextPaint =

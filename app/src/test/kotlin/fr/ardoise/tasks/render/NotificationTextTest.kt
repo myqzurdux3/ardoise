@@ -76,6 +76,39 @@ class NotificationTextTest {
         assertEquals("Aucune tâche en cours", NotificationText.summary(null, today))
     }
 
+    /**
+     * The lock screen shows the notification collapsed, so this single line is
+     * the default state of Ardoise's primary surface.
+     */
+    @Test
+    fun `the collapsed line carries the next task, not a count`() {
+        val line = NotificationText.collapsedLine(
+            snapshot(task("Appeler la banque", today.minusDays(1)), task("Pain")),
+            today,
+        )
+
+        assertTrue(line.startsWith("Appeler la banque"))
+        assertTrue(line.contains("en retard"))
+    }
+
+    @Test
+    fun `the collapsed line marks a task due today`() {
+        val line = NotificationText.collapsedLine(snapshot(task("Pain", today)), today)
+
+        assertTrue(line.contains("aujourd'hui"))
+    }
+
+    @Test
+    fun `the collapsed line of an undated task is just its title`() {
+        assertEquals("Pain", NotificationText.collapsedLine(snapshot(task("Pain")), today))
+    }
+
+    @Test
+    fun `the collapsed line handles an empty list`() {
+        assertEquals("Rien en attente.", NotificationText.collapsedLine(snapshot(), today))
+        assertEquals("Rien en attente.", NotificationText.collapsedLine(null, today))
+    }
+
     @Test
     fun `the title falls back to the app name when the list has none`() {
         assertEquals("Courses", NotificationText.title(snapshot(task("a"))))
