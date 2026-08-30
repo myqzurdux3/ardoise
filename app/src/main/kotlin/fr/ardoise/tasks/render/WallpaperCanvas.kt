@@ -40,6 +40,7 @@ object WallpaperCanvas {
         snapshot: RenderSnapshot?,
         width: Int,
         height: Int,
+        wording: Wording,
         today: LocalDate = LocalDate.now(),
         zone: ZoneId = ZoneId.systemDefault(),
     ): Bitmap {
@@ -51,10 +52,10 @@ object WallpaperCanvas {
         val available = width - margin * 2f
         var cursor = height * TOP_RESERVED
 
-        cursor = drawHeader(canvas, snapshot, margin, cursor, available, height)
+        cursor = drawHeader(canvas, snapshot, margin, cursor, available, height, wording)
 
         if (snapshot == null || snapshot.isEmpty) {
-            drawEmptyState(canvas, margin, cursor, height)
+            drawEmptyState(canvas, margin, cursor, height, wording)
             return bitmap
         }
 
@@ -86,7 +87,7 @@ object WallpaperCanvas {
             cursor += height * LINE_HEIGHT
         }
 
-        drawFooter(canvas, snapshot, margin, height, zone)
+        drawFooter(canvas, snapshot, margin, height, zone, wording)
         return bitmap
     }
 
@@ -114,8 +115,9 @@ object WallpaperCanvas {
         top: Float,
         available: Float,
         height: Int,
+        wording: Wording,
     ): Float {
-        val title = snapshot?.listTitle?.takeIf { it.isNotBlank() } ?: "ARDOISE"
+        val title = snapshot?.listTitle?.takeIf { it.isNotBlank() } ?: wording.appName
         val headerPaint = textPaint(height * TITLE_SIZE, ArdoisePalette.OCHRE, "sans-serif-medium").apply {
             letterSpacing = 0.22f
         }
@@ -138,9 +140,15 @@ object WallpaperCanvas {
         return ruleY + height * 0.038f
     }
 
-    private fun drawEmptyState(canvas: Canvas, margin: Float, top: Float, height: Int) {
+    private fun drawEmptyState(
+        canvas: Canvas,
+        margin: Float,
+        top: Float,
+        height: Int,
+        wording: Wording,
+    ) {
         val paint = textPaint(height * TASK_SIZE, ArdoisePalette.CHALK_DIM, "sans-serif")
-        canvas.drawText("Rien en attente.", margin, top, paint)
+        canvas.drawText(wording.nothingPending, margin, top, paint)
     }
 
     private fun drawFooter(
@@ -149,18 +157,19 @@ object WallpaperCanvas {
         margin: Float,
         height: Int,
         zone: ZoneId,
+        wording: Wording,
     ) {
         val paint = textPaint(height * FOOTER_SIZE, ArdoisePalette.CHALK_DIM, "sans-serif").apply {
             alpha = 130
             letterSpacing = 0.08f
         }
         val stamp = if (snapshot.syncedAtEpochMs <= 0L) {
-            "en attente de synchronisation"
+            wording.stampAwaitingSync
         } else {
             val time = Instant.ofEpochMilli(snapshot.syncedAtEpochMs)
                 .atZone(zone)
                 .format(DateTimeFormatter.ofPattern("HH:mm"))
-            if (snapshot.stale) "hors ligne, $time" else "à $time"
+            if (snapshot.stale) wording.offlineAt(time) else wording.syncedAt(time)
         }
         canvas.drawText(stamp, margin, height * FOOTER_BASELINE, paint)
     }

@@ -1,5 +1,8 @@
 package fr.ardoise.tasks.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,12 +16,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -32,9 +37,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fr.ardoise.tasks.R
+import fr.ardoise.tasks.auth.SigningIdentity
 import fr.ardoise.tasks.data.ArdoiseSettings
 import fr.ardoise.tasks.data.TaskListDto
 import fr.ardoise.tasks.ui.theme.Chalk
@@ -80,6 +90,10 @@ fun HomeScreen(
 
             LockPreview(snapshot = state.snapshot, maxTasks = state.settings.maxTasks)
 
+            if (state.setupRequired) {
+                SetupCard()
+            }
+
             if (!state.authorized) {
                 SignInCard(onSignIn = onSignIn)
             } else {
@@ -100,7 +114,7 @@ fun HomeScreen(
                 onWallpaperToggle = onWallpaperToggle,
             )
 
-            SectionCard(title = "Lignes affichées") {
+            SectionCard(title = stringResource(R.string.section_lines)) {
                 ChipRow(
                     options = ArdoiseSettings.MAX_TASKS_CHOICES,
                     selected = state.settings.maxTasks,
@@ -109,17 +123,16 @@ fun HomeScreen(
                 )
             }
 
-            SectionCard(title = "Fréquence de synchronisation") {
+            SectionCard(title = stringResource(R.string.section_sync)) {
                 ChipRow(
                     options = ArdoiseSettings.SYNC_MINUTES_CHOICES,
                     selected = state.settings.syncIntervalMinutes,
-                    label = { "$it min" },
+                    label = { stringResource(R.string.minutes_format, it) },
                     onSelect = onSyncInterval,
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "L'API Google Tasks n'envoie aucune notification de changement. " +
-                        "Ardoise interroge donc le serveur à intervalle régulier.",
+                    text = stringResource(R.string.sync_polling_note),
                     color = ChalkDim,
                     fontSize = 12.sp,
                     style = MaterialTheme.typography.bodyMedium,
@@ -128,7 +141,7 @@ fun HomeScreen(
                 OutlinedButton(onClick = onRefresh, enabled = !state.busy) {
                     Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Actualiser maintenant")
+                    Text(stringResource(R.string.action_refresh_now))
                 }
             }
 
@@ -145,7 +158,7 @@ private fun Wordmark(busy: Boolean) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                text = "ARDOISE",
+                text = stringResource(R.string.app_name).uppercase(),
                 color = Chalk,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Medium,
@@ -153,7 +166,7 @@ private fun Wordmark(busy: Boolean) {
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Vos tâches, sur l'écran de verrouillage",
+                text = stringResource(R.string.tagline),
                 color = ChalkDim,
                 fontSize = 13.sp,
             )
@@ -168,17 +181,88 @@ private fun Wordmark(busy: Boolean) {
     }
 }
 
+/**
+ * Shown when Google rejects the app for lacking an OAuth client.
+ *
+ * Ardoise cannot ship a working client -- Google binds one to a package name
+ * plus a signing certificate, so every install signed with a different key
+ * needs its own. The least this screen can do is show the two values the Cloud
+ * Console asks for, read from the running build, ready to copy.
+ */
+@Composable
+private fun SetupCard() {
+    val context = LocalContext.current
+    val packageName = remember(context) { SigningIdentity.packageName(context) }
+    val fingerprint = remember(context) { SigningIdentity.sha1(context) }
+    val unavailable = stringResource(R.string.setup_sha1_unavailable)
+
+    SectionCard(title = stringResource(R.string.section_setup)) {
+        Text(
+            text = stringResource(R.string.setup_body),
+            color = ChalkDim,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(18.dp))
+        CopyableValue(
+            label = stringResource(R.string.setup_package),
+            value = packageName,
+            context = context,
+        )
+        Spacer(Modifier.height(14.dp))
+        CopyableValue(
+            label = stringResource(R.string.setup_sha1),
+            value = fingerprint ?: unavailable,
+            context = context,
+            enabled = fingerprint != null,
+        )
+    }
+}
+
+@Composable
+private fun CopyableValue(
+    label: String,
+    value: String,
+    context: Context,
+    enabled: Boolean = true,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(label, color = ChalkDim, fontSize = 11.sp, letterSpacing = 1.2.sp)
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = value,
+                color = Chalk,
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
+            )
+        }
+        IconButton(
+            onClick = {
+                context.getSystemService(ClipboardManager::class.java)
+                    ?.setPrimaryClip(ClipData.newPlainText(label, value))
+            },
+            enabled = enabled,
+        ) {
+            Icon(
+                Icons.Rounded.ContentCopy,
+                contentDescription = stringResource(R.string.action_copy),
+                tint = Ochre,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun SignInCard(onSignIn: () -> Unit) {
-    SectionCard(title = "Compte Google") {
+    SectionCard(title = stringResource(R.string.section_account)) {
         Text(
-            text = "Ardoise lit vos listes Google Tasks. Aucun jeton n'est conservé sur " +
-                "l'appareil et aucune donnée ne quitte votre téléphone.",
+            text = stringResource(R.string.account_body),
             color = ChalkDim,
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onSignIn) { Text("Connecter Google Tasks") }
+        Button(onClick = onSignIn) { Text(stringResource(R.string.action_connect)) }
     }
 }
 
@@ -188,9 +272,13 @@ private fun ListCard(
     selectedId: String?,
     onSelect: (TaskListDto) -> Unit,
 ) {
-    SectionCard(title = "Liste affichée") {
+    SectionCard(title = stringResource(R.string.section_list)) {
         if (lists.isEmpty()) {
-            Text("Aucune liste trouvée.", color = ChalkDim, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.list_empty),
+                color = ChalkDim,
+                style = MaterialTheme.typography.bodyMedium,
+            )
             return@SectionCard
         }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -212,15 +300,14 @@ private fun ListCard(
 
 @Composable
 private fun PermissionCard(onRequest: () -> Unit) {
-    SectionCard(title = "Notifications bloquées") {
+    SectionCard(title = stringResource(R.string.section_notifications_blocked)) {
         Text(
-            text = "Sans autorisation de notification, la surface principale d'Ardoise ne " +
-                "peut pas s'afficher.",
+            text = stringResource(R.string.notifications_blocked_body),
             color = ChalkDim,
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onRequest) { Text("Autoriser") }
+        Button(onClick = onRequest) { Text(stringResource(R.string.action_allow)) }
     }
 }
 
@@ -230,24 +317,23 @@ private fun SurfacesCard(
     onNotificationToggle: (Boolean) -> Unit,
     onWallpaperToggle: (Boolean) -> Unit,
 ) {
-    SectionCard(title = "Surfaces") {
+    SectionCard(title = stringResource(R.string.section_surfaces)) {
         ToggleRow(
-            title = "Notification permanente",
-            subtitle = "Six à huit lignes, avec un bouton pour cocher sans déverrouiller.",
+            title = stringResource(R.string.surface_notification),
+            subtitle = stringResource(R.string.surface_notification_detail),
             checked = settings.notificationEnabled,
             onCheckedChange = onNotificationToggle,
         )
         Spacer(Modifier.height(18.dp))
         ToggleRow(
-            title = "Fond d'écran de verrouillage",
-            subtitle = "Remplace votre fond d'écran de verrouillage actuel.",
+            title = stringResource(R.string.surface_wallpaper),
+            subtitle = stringResource(R.string.surface_wallpaper_detail),
             checked = settings.wallpaperEnabled,
             onCheckedChange = onWallpaperToggle,
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Pensez à régler Notifications sur l'écran de verrouillage sur " +
-                "« Afficher tout le contenu », sinon le système masque le texte.",
+            text = stringResource(R.string.surfaces_visibility_hint),
             color = ChalkDim,
             fontSize = 12.sp,
         )
@@ -288,7 +374,7 @@ private fun ToggleRow(
 private fun <T> ChipRow(
     options: List<T>,
     selected: T,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
     onSelect: (T) -> Unit,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

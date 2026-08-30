@@ -1,3 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English is the default locale, so it is also the fallback for every language
+  Ardoise has not been translated into. French lives in values-fr.
+-->
 <resources>
     <string name="app_name">Ardoise</string>
+    <string name="tagline">Your tasks, on the lock screen</string>
+
+    <!-- Google account -->
+    <string name="section_account">Google account</string>
+    <string name="account_body">Ardoise reads your Google Tasks lists. No token is kept on the device and no data leaves your phone.</string>
+    <string name="action_connect">Connect Google Tasks</string>
+
+    <!-- Setup required -->
+    <string name="section_setup">Setup required</string>
+    <string name="setup_body">Google does not recognise this build. Ardoise needs an OAuth client of type <b>Android</b> registered in Google Cloud Console for exactly these two values, in a project where the Tasks API is enabled.</string>
+    <string name="setup_package">Package name</string>
+    <string name="setup_sha1">SHA-1 fingerprint</string>
+    <string name="setup_sha1_unavailable">unavailable</string>
+    <string name="action_copy">Copy</string>
+    <string name="setup_copied">Copied to the clipboard.</string>
+
+    <!-- List -->
+    <string name="section_list">Displayed list</string>
+    <string name="list_empty">No list found.</string>
+
+    <!-- Notifications permission -->
+    <string name="section_notifications_blocked">Notifications blocked</string>
+    <string name="notifications_blocked_body">Without notification permission, Ardoise\'s main surface cannot appear.</string>
+    <string name="action_allow">Allow</string>
+
+    <!-- Surfaces -->
+    <string name="section_surfaces">Surfaces</string>
+    <string name="surface_notification">Ongoing notification</string>
+    <string name="surface_notification_detail">Six to eight lines, with a button to tick a task off without unlocking.</string>
+    <string name="surface_wallpaper">Lock screen wallpaper</string>
+    <string name="surface_wallpaper_detail">Replaces your current lock screen wallpaper.</string>
+    <string name="surfaces_visibility_hint">Remember to set Notifications on the lock screen to “Show all content”, otherwise the system hides the text.</string>
+
+    <!-- Display and sync -->
+    <string name="section_lines">Lines shown</string>
+    <string name="section_sync">Sync frequency</string>
+    <string name="sync_polling_note">The Google Tasks API sends no change notifications, so Ardoise polls the server at a fixed interval.</string>
+    <string name="action_refresh_now">Refresh now</string>
+    <string name="minutes_format">%1$d min</string>
+
+    <!-- Messages -->
+    <string name="msg_sign_in_failed">Sign-in failed: %1$s</string>
+    <string name="msg_not_registered">This build is not registered in Google Cloud Console.</string>
+    <string name="msg_consent_cancelled">Authorisation cancelled.</string>
+    <string name="msg_consent_refused">Authorisation refused: %1$s</string>
+    <string name="msg_consent_no_data">Authorisation refused: Google returned no data.</string>
+    <string name="msg_consent_launch_failed">Could not open the consent screen.</string>
+    <string name="msg_lists_failed">Could not read your lists: %1$s</string>
+    <string name="msg_not_configured">Choose a list first.</string>
+    <string name="msg_sign_in_needed">You need to sign in again.</string>
+    <string name="msg_sync_failed">Sync failed: %1$s</string>
+    <string name="msg_wallpaper_enabled">Ardoise now manages your lock screen wallpaper.</string>
+    <string name="msg_no_access_token">Google returned no access token.</string>
+
+    <!-- Notification and wallpaper wording -->
+    <string name="notification_channel">Tasks on the lock screen</string>
+    <string name="notification_channel_detail">Continuously shows the task list you chose.</string>
+    <string name="action_complete">Complete</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="nothing_pending">Nothing pending.</string>
+    <string name="no_tasks">No tasks right now</string>
+    <string name="suffix_overdue">overdue</string>
+    <string name="suffix_today">today</string>
+    <string name="suffix_offline">offline</string>
+    <string name="count_task_one">1 task</string>
+    <string name="count_task_many">%1$d tasks</string>
+    <string name="count_overdue">%1$d overdue</string>
+    <string name="stamp_awaiting_sync">waiting for first sync</string>
+    <string name="stamp_synced_at">at %1$s</string>
+    <string name="stamp_offline_at">offline, %1$s</string>
 </resources>

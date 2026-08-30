@@ -20,15 +20,20 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fr.ardoise.tasks.R
 import fr.ardoise.tasks.domain.RenderSnapshot
+import fr.ardoise.tasks.render.Wording
 import fr.ardoise.tasks.ui.theme.Chalk
 import fr.ardoise.tasks.ui.theme.ChalkDim
 import fr.ardoise.tasks.ui.theme.Ochre
@@ -58,6 +63,8 @@ fun LockPreview(
 ) {
     val shape = RoundedCornerShape(28.dp)
     val tasks = snapshot?.tasks.orEmpty().take(maxTasks)
+    val context = LocalContext.current
+    val wording = remember(context) { Wording.from(context) }
 
     Box(
         modifier = modifier
@@ -86,8 +93,8 @@ fun LockPreview(
                 fontWeight = FontWeight.Light,
             )
             Text(
-                text = today.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH))
-                    .replaceFirstChar { it.titlecase(Locale.FRENCH) },
+                text = today.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.getDefault()))
+                    .replaceFirstChar { it.titlecase(Locale.getDefault()) },
                 color = ChalkDim,
                 fontSize = 13.sp,
             )
@@ -95,7 +102,7 @@ fun LockPreview(
             Spacer(Modifier.height(30.dp))
 
             Text(
-                text = (snapshot?.listTitle?.takeIf { it.isNotBlank() } ?: "ARDOISE").uppercase(),
+                text = (snapshot?.listTitle?.takeIf { it.isNotBlank() } ?: wording.appName).uppercase(),
                 color = Ochre,
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
@@ -111,7 +118,7 @@ fun LockPreview(
             Spacer(Modifier.height(18.dp))
 
             if (tasks.isEmpty()) {
-                Text("Rien en attente.", color = ChalkDim, fontSize = 15.sp)
+                Text(stringResource(R.string.nothing_pending), color = ChalkDim, fontSize = 15.sp)
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(13.dp)) {
                     tasks.forEach { task ->
@@ -139,7 +146,7 @@ fun LockPreview(
             Spacer(Modifier.height(26.dp))
 
             Text(
-                text = footerLabel(snapshot),
+                text = footerLabel(snapshot, wording),
                 color = ChalkDim.copy(alpha = 0.6f),
                 fontSize = 11.sp,
             )
@@ -147,12 +154,12 @@ fun LockPreview(
     }
 }
 
-private fun footerLabel(snapshot: RenderSnapshot?): String {
-    if (snapshot == null || snapshot.syncedAtEpochMs <= 0L) return "en attente de synchronisation"
+private fun footerLabel(snapshot: RenderSnapshot?, wording: Wording): String {
+    if (snapshot == null || snapshot.syncedAtEpochMs <= 0L) return wording.stampAwaitingSync
     val time = Instant.ofEpochMilli(snapshot.syncedAtEpochMs)
         .atZone(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("HH:mm"))
-    return if (snapshot.stale) "hors ligne, $time" else "à $time"
+    return if (snapshot.stale) wording.offlineAt(time) else wording.syncedAt(time)
 }
 
 @Composable

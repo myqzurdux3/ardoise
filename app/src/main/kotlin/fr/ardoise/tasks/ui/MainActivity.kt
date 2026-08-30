@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
 
                 val consentLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
                     ActivityResultContracts.StartIntentSenderForResult()
-                ) { result -> model.onConsentResult(result.data) }
+                ) { result -> model.onConsentResult(result.resultCode, result.data) }
 
                 val notificationLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission()

@@ -35,7 +35,7 @@ class WallpaperRenderer(
         if (width <= 0 || height <= 0) return false
 
         return try {
-            val bitmap = WallpaperCanvas.render(snapshot, width, height, today)
+            val bitmap = WallpaperCanvas.render(snapshot, width, height, Wording.from(context), today)
             // Without an explicit crop hint the system falls back to
             // getDesiredMinimumWidth(), which is twice the screen width so the
             // home screen can parallax. A screen-sized bitmap then gets scaled

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tagline">Vos tâches, sur l\'écran de verrouillage</string>
+
+    <!-- Compte Google -->
+    <string name="section_account">Compte Google</string>
+    <string name="account_body">Ardoise lit vos listes Google Tasks. Aucun jeton n\'est conservé sur l\'appareil et aucune donnée ne quitte votre téléphone.</string>
+    <string name="action_connect">Connecter Google Tasks</string>
+
+    <!-- Configuration requise -->
+    <string name="section_setup">Configuration requise</string>
+    <string name="setup_body">Google ne reconnaît pas cette version. Ardoise a besoin d\'un identifiant OAuth de type <b>Android</b> enregistré dans Google Cloud Console pour exactement ces deux valeurs, dans un projet où l\'API Tasks est activée.</string>
+    <string name="setup_package">Nom du package</string>
+    <string name="setup_sha1">Empreinte SHA-1</string>
+    <string name="setup_sha1_unavailable">indisponible</string>
+    <string name="action_copy">Copier</string>
+    <string name="setup_copied">Copié dans le presse-papiers.</string>
+
+    <!-- Liste -->
+    <string name="section_list">Liste affichée</string>
+    <string name="list_empty">Aucune liste trouvée.</string>
+
+    <!-- Permission de notification -->
+    <string name="section_notifications_blocked">Notifications bloquées</string>
+    <string name="notifications_blocked_body">Sans autorisation de notification, la surface principale d\'Ardoise ne peut pas s\'afficher.</string>
+    <string name="action_allow">Autoriser</string>
+
+    <!-- Surfaces -->
+    <string name="section_surfaces">Surfaces</string>
+    <string name="surface_notification">Notification permanente</string>
+    <string name="surface_notification_detail">Six à huit lignes, avec un bouton pour cocher sans déverrouiller.</string>
+    <string name="surface_wallpaper">Fond d\'écran de verrouillage</string>
+    <string name="surface_wallpaper_detail">Remplace votre fond d\'écran de verrouillage actuel.</string>
+    <string name="surfaces_visibility_hint">Pensez à régler Notifications sur l\'écran de verrouillage sur « Afficher tout le contenu », sinon le système masque le texte.</string>
+
+    <!-- Affichage et synchronisation -->
+    <string name="section_lines">Lignes affichées</string>
+    <string name="section_sync">Fréquence de synchronisation</string>
+    <string name="sync_polling_note">L\'API Google Tasks n\'envoie aucune notification de changement. Ardoise interroge donc le serveur à intervalle régulier.</string>
+    <string name="action_refresh_now">Actualiser maintenant</string>
+    <string name="minutes_format">%1$d min</string>
+
+    <!-- Messages -->
+    <string name="msg_sign_in_failed">Connexion impossible : %1$s</string>
+    <string name="msg_not_registered">Cette version n\'est pas enregistrée dans Google Cloud Console.</string>
+    <string name="msg_consent_cancelled">Autorisation annulée.</string>
+    <string name="msg_consent_refused">Autorisation refusée : %1$s</string>
+    <string name="msg_consent_no_data">Autorisation refusée : aucune donnée renvoyée par Google.</string>
+    <string name="msg_consent_launch_failed">Impossible d\'ouvrir l\'écran de consentement.</string>
+    <string name="msg_lists_failed">Lecture des listes impossible : %1$s</string>
+    <string name="msg_not_configured">Choisissez d\'abord une liste.</string>
+    <string name="msg_sign_in_needed">Reconnexion nécessaire.</string>
+    <string name="msg_sync_failed">Synchronisation impossible : %1$s</string>
+    <string name="msg_wallpaper_enabled">Le fond d\'écran de verrouillage est désormais géré par Ardoise.</string>
+    <string name="msg_no_access_token">Google n\'a renvoyé aucun jeton d\'accès.</string>
+
+    <!-- Libellés de la notification et du fond d\'écran -->
+    <string name="notification_channel">Tâches sur l\'écran de verrouillage</string>
+    <string name="notification_channel_detail">Affiche en continu la liste de tâches choisie.</string>
+    <string name="action_complete">Terminer</string>
+    <string name="action_refresh">Actualiser</string>
+    <string name="nothing_pending">Rien en attente.</string>
+    <string name="no_tasks">Aucune tâche en cours</string>
+    <string name="suffix_overdue">en retard</string>
+    <string name="suffix_today">aujourd\'hui</string>
+    <string name="suffix_offline">hors ligne</string>
+    <string name="count_task_one">1 tâche</string>
+    <string name="count_task_many">%1$d tâches</string>
+    <string name="count_overdue">%1$d en retard</string>
+    <string name="stamp_awaiting_sync">en attente de synchronisation</string>
+    <string name="stamp_synced_at">à %1$s</string>
+    <string name="stamp_offline_at">hors ligne, %1$s</string>
+</resources>

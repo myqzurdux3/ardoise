@@ -33,10 +33,10 @@ class NotificationRenderer(private val context: Context) {
         // still leaves no sound, no vibration and no heads-up banner.
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Tâches sur l'écran de verrouillage",
+            context.getString(R.string.notification_channel),
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "Affiche en continu la liste de tâches choisie."
+            description = context.getString(R.string.notification_channel_detail)
             setShowBadge(false)
             setSound(null, null)
             enableVibration(false)
@@ -54,17 +54,20 @@ class NotificationRenderer(private val context: Context) {
         val manager = NotificationManagerCompat.from(context)
         if (!manager.areNotificationsEnabled()) return
 
+        // Resolved per render, so a language change applies without a restart.
+        val wording = Wording.from(context)
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(NotificationText.title(snapshot))
+            .setContentTitle(NotificationText.title(snapshot, wording))
             // Collapsed on the lock screen: the next task, not a bare count.
-            .setContentText(NotificationText.collapsedLine(snapshot, today))
+            .setContentText(NotificationText.collapsedLine(snapshot, today, wording))
             // In the header line, so the count survives expansion either way.
-            .setSubText(NotificationText.summary(snapshot, today))
+            .setSubText(NotificationText.summary(snapshot, today, wording))
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .setBigContentTitle(NotificationText.title(snapshot))
-                    .bigText(NotificationText.body(snapshot, today))
+                    .setBigContentTitle(NotificationText.title(snapshot, wording))
+                    .bigText(NotificationText.body(snapshot, today, wording))
             )
             .setColor(ArdoisePalette.OCHRE)
             .setOngoing(true)
@@ -78,11 +81,15 @@ class NotificationRenderer(private val context: Context) {
         snapshot?.tasks?.firstOrNull()?.let { first ->
             builder.addAction(
                 R.drawable.ic_check,
-                "Terminer",
+                context.getString(R.string.action_complete),
                 broadcast(TaskActionReceiver.ACTION_COMPLETE, first.id),
             )
         }
-        builder.addAction(R.drawable.ic_refresh, "Actualiser", broadcast(TaskActionReceiver.ACTION_REFRESH))
+        builder.addAction(
+            R.drawable.ic_refresh,
+            context.getString(R.string.action_refresh),
+            broadcast(TaskActionReceiver.ACTION_REFRESH),
+        )
 
         try {
             manager.notify(NOTIFICATION_ID, builder.build())

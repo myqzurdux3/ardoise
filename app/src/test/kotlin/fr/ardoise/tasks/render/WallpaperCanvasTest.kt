@@ -18,6 +18,7 @@ import java.time.ZoneOffset
 class WallpaperCanvasTest {
 
     private val today = LocalDate.of(2026, 8, 30)
+    private val wording = testWording()
     private val width = 1080
     private val height = 2400
 
@@ -30,7 +31,7 @@ class WallpaperCanvasTest {
 
     @Test
     fun `the bitmap matches the requested screen size`() {
-        val bitmap = WallpaperCanvas.render(snapshot("Pain"), width, height, today)
+        val bitmap = WallpaperCanvas.render(snapshot("Pain"), width, height, wording, today)
 
         assertEquals(width, bitmap.width)
         assertEquals(height, bitmap.height)
@@ -38,7 +39,7 @@ class WallpaperCanvasTest {
 
     @Test
     fun `the top of the screen is left to the system clock`() {
-        val bitmap = WallpaperCanvas.render(snapshot("Pain", "Banque"), width, height, today)
+        val bitmap = WallpaperCanvas.render(snapshot("Pain", "Banque"), width, height, wording, today)
 
         // Nothing but background above 40% of the height.
         val background = bitmap.getPixel(width / 2, (height * 0.05f).toInt())
@@ -48,15 +49,15 @@ class WallpaperCanvasTest {
 
     @Test
     fun `tasks are actually drawn below the reserved area`() {
-        val empty = WallpaperCanvas.render(null, width, height, today)
-        val filled = WallpaperCanvas.render(snapshot("Pain", "Banque", "Vélo"), width, height, today)
+        val empty = WallpaperCanvas.render(null, width, height, wording, today)
+        val filled = WallpaperCanvas.render(snapshot("Pain", "Banque", "Vélo"), width, height, wording, today)
 
         assertTrue(differingPixels(empty, filled) > 0)
     }
 
     @Test
     fun `a null snapshot still produces a full-size bitmap`() {
-        val bitmap = WallpaperCanvas.render(null, width, height, today)
+        val bitmap = WallpaperCanvas.render(null, width, height, wording, today)
 
         assertEquals(width, bitmap.width)
         assertEquals(height, bitmap.height)
