@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/Kotlin-2.1-1C1E21?style=flat-square&labelColor=C9884A" alt="Kotlin 2.1">
   <img src="https://img.shields.io/badge/Compose-Material%203-1C1E21?style=flat-square&labelColor=C9884A" alt="Jetpack Compose">
   <img src="https://img.shields.io/github/actions/workflow/status/myqzurdux3/ardoise/ci.yml?branch=main&style=flat-square&label=CI&labelColor=C9884A&color=1C1E21" alt="CI">
+  <img src="https://img.shields.io/badge/langues-EN%20%C2%B7%20FR-1C1E21?style=flat-square&labelColor=C9884A" alt="Anglais et français">
   <img src="https://img.shields.io/badge/licence-MIT-1C1E21?style=flat-square&labelColor=C9884A" alt="MIT">
 </p>
 
@@ -63,6 +64,8 @@ Ardoise exploite ces deux surfaces à partir d'une source unique.
   cache local.
 - Ne stocke **aucun jeton d'accès** et ne contient **aucun secret client**.
   Rien ne quitte votre téléphone, sauf les appels à l'API Google.
+- Parle **anglais et français**, en suivant la langue du système. L'anglais
+  est la locale par défaut, donc le repli pour toute autre langue.
 
 ## Ce qu'Ardoise ne fait pas
 
@@ -153,6 +156,19 @@ git clone <ce-dépôt> && cd ardoise
 echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew :app:installDebug
 ```
+
+**Si Ardoise refuse la connexion**
+
+Juste après le choix du compte, Google rejette une application dont le couple
+package + SHA-1 n'a pas d'identifiant OAuth. Play services le remonte comme un
+générique `8 INTERNAL_ERROR` et ne nomme la vraie cause,
+`UNREGISTERED_ON_API_CONSOLE`, que dans le message de statut — ce qui donne
+l'impression d'un refus de votre part alors que vous venez d'accepter.
+
+Ardoise reconnaît ce cas et affiche un encart **Configuration requise** avec le
+nom de package et l'empreinte SHA-1 de la version installée, lus depuis le
+`PackageManager` et prêts à copier. Ce sont exactement les deux valeurs à
+enregistrer à l'étape 1.
 
 **3. Réglez Android**
 

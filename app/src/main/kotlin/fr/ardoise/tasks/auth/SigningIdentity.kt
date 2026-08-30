@@ -22,11 +22,16 @@ object SigningIdentity {
     fun packageName(context: Context): String = context.packageName
 
     /** Uppercase colon-separated SHA-1, the format the Cloud Console expects. */
-    fun sha1(context: Context): String? = certificate(context)?.let { der ->
+    fun sha1(context: Context): String? = certificate(context)?.let(::fingerprint)
+
+    /**
+     * Kept separate from [PackageManager] so the formatting -- the only part
+     * with any logic in it -- can be checked without an Android runtime.
+     */
+    fun fingerprint(der: ByteArray): String =
         MessageDigest.getInstance("SHA-1")
             .digest(der)
             .joinToString(":") { "%02X".format(it) }
-    }
 
     private fun certificate(context: Context): ByteArray? = runCatching {
         val manager = context.packageManager
