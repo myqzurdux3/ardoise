@@ -29,7 +29,7 @@
     <string name="surface_notification">Notification permanente</string>
     <string name="surface_notification_detail">Six à huit lignes, avec un bouton pour cocher sans déverrouiller.</string>
     <string name="surface_wallpaper">Fond d\'écran de verrouillage</string>
-    <string name="surface_wallpaper_detail">Remplace votre fond d\'écran de verrouillage actuel.</string>
+    <string name="surface_wallpaper_detail">Remplace votre fond d\'écran de verrouillage. En désactivant, on revient au fond d\'écran d\'accueil : une image posée séparément sur l\'écran de verrouillage ne peut pas être récupérée.</string>
     <string name="surfaces_visibility_hint">Pensez à régler Notifications sur l\'écran de verrouillage sur « Afficher tout le contenu », sinon le système masque le texte.</string>
 
     <!-- Affichage et synchronisation -->
@@ -50,7 +50,7 @@
     <string name="msg_not_configured">Choisissez d\'abord une liste.</string>
     <string name="msg_sign_in_needed">Reconnexion nécessaire.</string>
     <string name="msg_list_gone">Cette liste n\'existe plus. Choisissez-en une autre.</string>
-    <string name="msg_wallpaper_released">Votre fond d\'écran de verrouillage système est rétabli.</string>
+    <string name="msg_wallpaper_released">Ardoise ne dessine plus l\'écran de verrouillage. Il affiche désormais votre fond d\'écran d\'accueil.</string>
     <string name="msg_sync_failed">Synchronisation impossible : %1$s</string>
     <string name="msg_wallpaper_enabled">Le fond d\'écran de verrouillage est désormais géré par Ardoise.</string>
     <string name="msg_no_access_token">Google n\'a renvoyé aucun jeton d\'accès.</string>

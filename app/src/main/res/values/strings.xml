@@ -34,7 +34,7 @@
     <string name="surface_notification">Ongoing notification</string>
     <string name="surface_notification_detail">Six to eight lines, with a button to tick a task off without unlocking.</string>
     <string name="surface_wallpaper">Lock screen wallpaper</string>
-    <string name="surface_wallpaper_detail">Replaces your current lock screen wallpaper.</string>
+    <string name="surface_wallpaper_detail">Replaces your lock screen wallpaper. Switching this off falls back to your home screen wallpaper, so a lock screen image set separately cannot be recovered.</string>
     <string name="surfaces_visibility_hint">Remember to set Notifications on the lock screen to “Show all content”, otherwise the system hides the text.</string>
 
     <!-- Display and sync -->
@@ -55,7 +55,7 @@
     <string name="msg_not_configured">Choose a list first.</string>
     <string name="msg_sign_in_needed">You need to sign in again.</string>
     <string name="msg_list_gone">That list no longer exists. Pick another one.</string>
-    <string name="msg_wallpaper_released">Your system lock screen wallpaper is back.</string>
+    <string name="msg_wallpaper_released">Ardoise no longer draws the lock screen. It now shows your home screen wallpaper.</string>
     <string name="msg_sync_failed">Sync failed: %1$s</string>
     <string name="msg_wallpaper_enabled">Ardoise now manages your lock screen wallpaper.</string>
     <string name="msg_no_access_token">Google returned no access token.</string>
