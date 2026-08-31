@@ -3,13 +3,13 @@
   English is the default locale, so it is also the fallback for every language
   Ardoise has not been translated into. French lives in values-fr.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">Ardoise</string>
     <string name="tagline">Your tasks, on the lock screen</string>
 
     <!-- Google account -->
     <string name="section_account">Google account</string>
-    <string name="account_body">Ardoise reads your Google Tasks lists. No token is kept on the device and no data leaves your phone.</string>
+    <string name="account_body">Ardoise reads your Google Tasks lists. No access token is ever stored, and nothing is sent anywhere but Google’s own API. The cached list stays on this device: it is excluded from cloud backup and from device transfer.</string>
     <string name="action_connect">Connect Google Tasks</string>
 
     <!-- Setup required -->
@@ -19,7 +19,6 @@
     <string name="setup_sha1">SHA-1 fingerprint</string>
     <string name="setup_sha1_unavailable">unavailable</string>
     <string name="action_copy">Copy</string>
-    <string name="setup_copied">Copied to the clipboard.</string>
 
     <!-- List -->
     <string name="section_list">Displayed list</string>
@@ -55,10 +54,21 @@
     <string name="msg_lists_failed">Could not read your lists: %1$s</string>
     <string name="msg_not_configured">Choose a list first.</string>
     <string name="msg_sign_in_needed">You need to sign in again.</string>
+    <string name="msg_list_gone">That list no longer exists. Pick another one.</string>
+    <string name="msg_wallpaper_released">Your system lock screen wallpaper is back.</string>
     <string name="msg_sync_failed">Sync failed: %1$s</string>
     <string name="msg_wallpaper_enabled">Ardoise now manages your lock screen wallpaper.</string>
     <string name="msg_no_access_token">Google returned no access token.</string>
 
+    <!--
+      Deliberately plain strings rather than <plurals>. The renderers are plain
+      Kotlin objects with no Context, which is what keeps them unit-testable
+      without an Android runtime; they receive already-resolved strings. A
+      quantity string would have to be resolved with the count in hand, at the
+      call site, which is exactly the Context dependency the split avoids.
+      English and French share the same one-versus-other rule, so nothing is
+      lost for the two locales Ardoise ships.
+    -->
     <!-- Notification and wallpaper wording -->
     <string name="notification_channel">Tasks on the lock screen</string>
     <string name="notification_channel_detail">Continuously shows the task list you chose.</string>
@@ -70,8 +80,9 @@
     <string name="suffix_today">today</string>
     <string name="suffix_offline">offline</string>
     <string name="count_task_one">1 task</string>
-    <string name="count_task_many">%1$d tasks</string>
-    <string name="count_overdue">%1$d overdue</string>
+    <string name="count_task_many" tools:ignore="PluralsCandidate">%1$d tasks</string>
+    <string name="count_overdue" tools:ignore="PluralsCandidate">%1$d overdue</string>
+    <string name="count_and_more" tools:ignore="PluralsCandidate">%1$d more</string>
     <string name="stamp_awaiting_sync">waiting for first sync</string>
     <string name="stamp_synced_at">at %1$s</string>
     <string name="stamp_offline_at">offline, %1$s</string>

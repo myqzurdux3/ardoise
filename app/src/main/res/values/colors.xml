@@ -1,6 +1,5 @@
 <resources>
-    <color name="slate">#FF1C1E21</color>
+    <!-- Only the two the theme actually references; the rest live in ArdoisePalette. -->
     <color name="slate_deep">#FF141618</color>
-    <color name="chalk">#FFF2EFE9</color>
     <color name="ochre">#FFC9884A</color>
 </resources>

@@ -31,7 +31,7 @@ class WallpaperCanvasTest {
 
     @Test
     fun `the bitmap matches the requested screen size`() {
-        val bitmap = WallpaperCanvas.render(snapshot("Pain"), width, height, wording, today)
+        val bitmap = WallpaperCanvas.render(snapshot("Pain"), width, height, wording, 10, today)
 
         assertEquals(width, bitmap.width)
         assertEquals(height, bitmap.height)
@@ -39,7 +39,7 @@ class WallpaperCanvasTest {
 
     @Test
     fun `the top of the screen is left to the system clock`() {
-        val bitmap = WallpaperCanvas.render(snapshot("Pain", "Banque"), width, height, wording, today)
+        val bitmap = WallpaperCanvas.render(snapshot("Pain", "Banque"), width, height, wording, 10, today)
 
         // Nothing but background above 40% of the height.
         val background = bitmap.getPixel(width / 2, (height * 0.05f).toInt())
@@ -49,15 +49,39 @@ class WallpaperCanvasTest {
 
     @Test
     fun `tasks are actually drawn below the reserved area`() {
-        val empty = WallpaperCanvas.render(null, width, height, wording, today)
-        val filled = WallpaperCanvas.render(snapshot("Pain", "Banque", "Vélo"), width, height, wording, today)
+        val empty = WallpaperCanvas.render(null, width, height, wording, 10, today)
+        val filled = WallpaperCanvas.render(snapshot("Pain", "Banque", "Vélo"), width, height, wording, 10, today)
 
         assertTrue(differingPixels(empty, filled) > 0)
     }
 
+    /**
+     * The footer used to be skipped on the empty path, so a two-day-old
+     * "nothing pending" was indistinguishable from a fresh one.
+     */
+    @Test
+    fun `the sync stamp is drawn even when the list is empty`() {
+        val empty = RenderSnapshot("l", "Courses", emptyList(), 1_000L)
+
+        val withStamp = WallpaperCanvas.render(empty, width, height, wording, 10, today)
+        val blank = WallpaperCanvas.render(
+            empty, width, height, wording.copy(stampSyncedAt = " ", stampOfflineAt = " "), 10, today,
+        )
+
+        assertTrue(differingPixels(blank, withStamp) > 0)
+    }
+
+    @Test
+    fun `only the first tasks up to the limit are drawn`() {
+        val six = WallpaperCanvas.render(snapshot("a", "b", "c", "d", "e", "f"), width, height, wording, 6, today)
+        val three = WallpaperCanvas.render(snapshot("a", "b", "c", "d", "e", "f"), width, height, wording, 3, today)
+
+        assertTrue(differingPixels(three, six) > 0)
+    }
+
     @Test
     fun `a null snapshot still produces a full-size bitmap`() {
-        val bitmap = WallpaperCanvas.render(null, width, height, wording, today)
+        val bitmap = WallpaperCanvas.render(null, width, height, wording, 10, today)
 
         assertEquals(width, bitmap.width)
         assertEquals(height, bitmap.height)
@@ -73,7 +97,7 @@ class WallpaperCanvasTest {
 
     private fun differingPixels(a: android.graphics.Bitmap, b: android.graphics.Bitmap): Int {
         var count = 0
-        for (y in (height / 2) until height step 6) {
+        for (y in (height / 3) until height step 6) {
             for (x in 0 until width step 6) {
                 if (a.getPixel(x, y) != b.getPixel(x, y)) count++
             }

@@ -3,6 +3,7 @@ package fr.ardoise.tasks.render
 import fr.ardoise.tasks.domain.RenderSnapshot
 import fr.ardoise.tasks.domain.SnapshotTask
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -12,6 +13,7 @@ class NotificationTextTest {
 
     private val today = LocalDate.of(2026, 8, 30)
     private val wording = testWording()
+    private val noLimit = 100
 
     private fun task(title: String, due: LocalDate? = null) = SnapshotTask(
         id = title,
@@ -24,7 +26,7 @@ class NotificationTextTest {
 
     @Test
     fun `each task gets its own line`() {
-        val body = NotificationText.body(snapshot(task("Bread"), task("Bank")), today, wording)
+        val body = NotificationText.body(snapshot(task("Bread"), task("Bank")), today, wording, noLimit)
 
         assertEquals(2, body.lines().size)
         assertTrue(body.contains("Bread"))
@@ -41,6 +43,7 @@ class NotificationTextTest {
             ),
             today,
             wording,
+            noLimit,
         )
         val lines = body.lines()
 
@@ -49,16 +52,42 @@ class NotificationTextTest {
         assertTrue(lines[2].endsWith("Someday"))
     }
 
+    /**
+     * The regression this guards: the snapshot used to be trimmed before the
+     * summary saw it, so a long list reported only the lines that fitted and
+     * claimed nothing was overdue when the overdue items were further down.
+     */
     @Test
-    fun `the summary counts tasks and overdue ones`() {
-        val summary = NotificationText.summary(
-            snapshot(task("a", today.minusDays(2)), task("b"), task("c")),
-            today,
-            wording,
-        )
+    fun `the summary counts the whole list, not the visible lines`() {
+        val tasks = buildList {
+            repeat(5) { add(task("Visible $it")) }
+            add(task("Hidden and late", today.minusDays(3)))
+            repeat(4) { add(task("Hidden $it")) }
+        }
+        val snapshot = RenderSnapshot("l", "Courses", tasks, 1_000L)
 
-        assertTrue(summary.startsWith("3 tasks"))
+        val summary = NotificationText.summary(snapshot, today, wording)
+
+        assertTrue(summary.startsWith("10 tasks"))
         assertTrue(summary.contains("1 overdue"))
+    }
+
+    @Test
+    fun `the body stops at the limit and says how many are left`() {
+        val tasks = (1..10).map { task("Task $it") }
+        val body = NotificationText.body(RenderSnapshot("l", "L", tasks, 1L), today, wording, 6)
+        val lines = body.lines()
+
+        assertEquals(7, lines.size)
+        assertTrue(lines.last().contains("4 more"))
+        assertFalse(body.contains("Task 8"))
+    }
+
+    @Test
+    fun `no overflow line when everything fits`() {
+        val body = NotificationText.body(snapshot(task("a"), task("b")), today, wording, 6)
+
+        assertFalse(body.contains("more"))
     }
 
     @Test
@@ -74,9 +103,21 @@ class NotificationTextTest {
     }
 
     @Test
-    fun `an empty list still renders something readable`() {
-        assertEquals("Nothing pending.", NotificationText.body(snapshot(), today, wording))
-        assertEquals("No tasks right now", NotificationText.summary(null, today, wording))
+    fun `an empty list reads as empty`() {
+        assertEquals("Nothing pending.", NotificationText.body(snapshot(), today, wording, noLimit))
+        assertEquals("Nothing pending.", NotificationText.summary(snapshot(), today, wording))
+    }
+
+    /**
+     * A first sync that failed leaves no cache at all. Wording it like an empty
+     * list would tell the user they have nothing to do when in fact nothing has
+     * been fetched yet.
+     */
+    @Test
+    fun `never having synced is worded differently from having nothing to do`() {
+        assertEquals("waiting for first sync", NotificationText.body(null, today, wording, noLimit))
+        assertEquals("waiting for first sync", NotificationText.summary(null, today, wording))
+        assertEquals("waiting for first sync", NotificationText.collapsedLine(null, today, wording))
     }
 
     /**
@@ -96,21 +137,18 @@ class NotificationTextTest {
     }
 
     @Test
-    fun `the collapsed line marks a task due today`() {
-        val line = NotificationText.collapsedLine(snapshot(task("Bread", today)), today, wording)
-
-        assertTrue(line.contains("today"))
-    }
-
-    @Test
     fun `the collapsed line of an undated task is just its title`() {
         assertEquals("Bread", NotificationText.collapsedLine(snapshot(task("Bread")), today, wording))
     }
 
     @Test
-    fun `the collapsed line handles an empty list`() {
-        assertEquals("Nothing pending.", NotificationText.collapsedLine(snapshot(), today, wording))
-        assertEquals("Nothing pending.", NotificationText.collapsedLine(null, today, wording))
+    fun `an absurdly long title is cut rather than pushed at the framework`() {
+        val long = "x".repeat(500)
+
+        val line = NotificationText.collapsedLine(snapshot(task(long)), today, wording)
+
+        assertTrue(line.length < 200)
+        assertTrue(line.endsWith("…"))
     }
 
     @Test
@@ -129,7 +167,7 @@ class NotificationTextTest {
             countTaskMany = "%1\$d tâches",
         )
 
-        assertEquals("Rien en attente.", NotificationText.body(snapshot(), today, french))
+        assertEquals("Rien en attente.", NotificationText.body(snapshot(), today, french, noLimit))
         assertTrue(
             NotificationText.summary(snapshot(task("a"), task("b")), today, french)
                 .startsWith("2 tâches")

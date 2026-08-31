@@ -5,7 +5,9 @@
   English without changing the whole system language.
 -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android"
-    android:defaultLocale="en">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:defaultLocale="en"
+    tools:targetApi="35">
     <locale android:name="en" />
     <locale android:name="fr" />
 </locale-config>

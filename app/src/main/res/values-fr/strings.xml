@@ -4,7 +4,7 @@
 
     <!-- Compte Google -->
     <string name="section_account">Compte Google</string>
-    <string name="account_body">Ardoise lit vos listes Google Tasks. Aucun jeton n\'est conservé sur l\'appareil et aucune donnée ne quitte votre téléphone.</string>
+    <string name="account_body">Ardoise lit vos listes Google Tasks. Aucun jeton d\'accès n\'est conservé, et rien n\'est envoyé ailleurs qu\'à l\'API de Google. La liste en cache reste sur cet appareil : elle est exclue de la sauvegarde cloud et du transfert d\'appareil.</string>
     <string name="action_connect">Connecter Google Tasks</string>
 
     <!-- Configuration requise -->
@@ -14,7 +14,6 @@
     <string name="setup_sha1">Empreinte SHA-1</string>
     <string name="setup_sha1_unavailable">indisponible</string>
     <string name="action_copy">Copier</string>
-    <string name="setup_copied">Copié dans le presse-papiers.</string>
 
     <!-- Liste -->
     <string name="section_list">Liste affichée</string>
@@ -50,6 +49,8 @@
     <string name="msg_lists_failed">Lecture des listes impossible : %1$s</string>
     <string name="msg_not_configured">Choisissez d\'abord une liste.</string>
     <string name="msg_sign_in_needed">Reconnexion nécessaire.</string>
+    <string name="msg_list_gone">Cette liste n\'existe plus. Choisissez-en une autre.</string>
+    <string name="msg_wallpaper_released">Votre fond d\'écran de verrouillage système est rétabli.</string>
     <string name="msg_sync_failed">Synchronisation impossible : %1$s</string>
     <string name="msg_wallpaper_enabled">Le fond d\'écran de verrouillage est désormais géré par Ardoise.</string>
     <string name="msg_no_access_token">Google n\'a renvoyé aucun jeton d\'accès.</string>
@@ -67,6 +68,7 @@
     <string name="count_task_one">1 tâche</string>
     <string name="count_task_many">%1$d tâches</string>
     <string name="count_overdue">%1$d en retard</string>
+    <string name="count_and_more">%1$d de plus</string>
     <string name="stamp_awaiting_sync">en attente de synchronisation</string>
     <string name="stamp_synced_at">à %1$s</string>
     <string name="stamp_offline_at">hors ligne, %1$s</string>

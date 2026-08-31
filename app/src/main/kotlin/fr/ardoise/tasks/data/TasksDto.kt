@@ -19,9 +19,7 @@ data class TaskDto(
     val title: String = "",
     val status: String = STATUS_NEEDS_ACTION,
     val due: String? = null,
-    val position: String? = null,
     val parent: String? = null,
-    val updated: String? = null,
 ) {
     val isCompleted: Boolean get() = status == STATUS_COMPLETED
     val isSubtask: Boolean get() = parent != null
@@ -35,5 +33,4 @@ data class TaskDto(
 @Serializable
 data class TasksResponse(
     val items: List<TaskDto> = emptyList(),
-    val nextPageToken: String? = null,
 )

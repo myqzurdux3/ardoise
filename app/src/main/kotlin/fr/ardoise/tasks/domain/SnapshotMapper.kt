@@ -6,6 +6,14 @@ import java.time.Instant
 /** Turns Google's wire format into the one thing the renderers understand. */
 object SnapshotMapper {
 
+    /**
+     * The notification joins tasks with newlines and the wallpaper draws one
+     * line per task with no wrapping, so a title carrying its own newline or a
+     * control character breaks both surfaces. Google accepts such titles, so
+     * they are flattened here, once, rather than defended against twice.
+     */
+    private val CONTROL_CHARS = Regex("[\\p{Cntrl}\\u2028\\u2029]+")
+
     fun toSnapshot(
         listId: String,
         listTitle: String,
@@ -18,12 +26,14 @@ object SnapshotMapper {
         tasks = dtos.asSequence()
             .filterNot { it.isCompleted }
             .filterNot { it.isSubtask }
-            .filter { it.title.isNotBlank() }
-            .map { SnapshotTask(id = it.id, title = it.title.trim(), dueEpochMs = parseDue(it.due)) }
+            .map { SnapshotTask(id = it.id, title = flatten(it.title), dueEpochMs = parseDue(it.due)) }
+            .filter { it.title.isNotEmpty() }
             .toList(),
         syncedAtEpochMs = nowEpochMs,
         stale = false,
     )
+
+    fun flatten(title: String): String = CONTROL_CHARS.replace(title, " ").trim()
 
     /**
      * Google Tasks sends due dates as RFC 3339 instants pinned to UTC midnight.

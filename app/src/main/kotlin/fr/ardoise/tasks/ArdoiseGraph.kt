@@ -1,5 +1,6 @@
 package fr.ardoise.tasks
 
+import android.annotation.SuppressLint
 import android.content.Context
 import fr.ardoise.tasks.auth.AuthProvider
 import fr.ardoise.tasks.data.SettingsStore
@@ -34,6 +35,10 @@ class ArdoiseGraph private constructor(context: Context) {
     suspend fun invalidateWallpaper() = wallpaper.invalidate()
 
     companion object {
+        // Lint flags a Context in a static field. The stored reference is the
+        // application context, whose lifetime is the process: it cannot outlive
+        // what holds it, so there is nothing to leak.
+        @SuppressLint("StaticFieldLeak")
         @Volatile
         private var instance: ArdoiseGraph? = null
 

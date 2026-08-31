@@ -2,7 +2,6 @@ package fr.ardoise.tasks.auth
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import java.security.MessageDigest
 
 /**
@@ -34,23 +33,16 @@ object SigningIdentity {
             .joinToString(":") { "%02X".format(it) }
 
     private fun certificate(context: Context): ByteArray? = runCatching {
-        val manager = context.packageManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val flags = PackageManager.GET_SIGNING_CERTIFICATES
-            val info = manager.getPackageInfo(context.packageName, flags)
-            val signing = info.signingInfo ?: return@runCatching null
-            val signatures = if (signing.hasMultipleSigners()) {
-                signing.apkContentsSigners
-            } else {
-                signing.signingCertificateHistory
-            }
-            signatures?.firstOrNull()?.toByteArray()
+        // GET_SIGNING_CERTIFICATES is API 28; minSdk is 29, so there is no
+        // legacy branch to keep.
+        val info = context.packageManager
+            .getPackageInfo(context.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+        val signing = info.signingInfo ?: return@runCatching null
+        val signatures = if (signing.hasMultipleSigners()) {
+            signing.apkContentsSigners
         } else {
-            @Suppress("DEPRECATION")
-            manager.getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES)
-                .signatures
-                ?.firstOrNull()
-                ?.toByteArray()
+            signing.signingCertificateHistory
         }
+        signatures?.firstOrNull()?.toByteArray()
     }.getOrNull()
 }

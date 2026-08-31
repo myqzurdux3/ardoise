@@ -5,7 +5,6 @@ import android.app.Application
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.annotation.StringRes
-import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import fr.ardoise.tasks.ArdoiseGraph
@@ -20,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
@@ -59,29 +59,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     lists = extra.lists,
                     authorized = extra.authorized,
                     busy = extra.busy,
-                    notificationsAllowed = notificationsAllowed(),
+                    // Read in refreshSystemState, not here: this transform runs
+                    // on every emission of four flows, and the check is a
+                    // synchronous binder call into system_server.
+                    notificationsAllowed = extra.notificationsAllowed,
                     setupRequired = setupRequired,
                     message = extra.message,
                 )
             }.collect { _state.value = it }
         }
+        refreshSystemState()
         refreshAuthorization()
     }
 
-    /**
-     * Silent probe on launch: if consent already exists, the UI skips sign-in.
-     *
-     * A build with no OAuth client is reported here rather than waiting for the
-     * user to tap through the account picker first, since that is the blocking
-     * state and nothing else in the app can work until it is fixed.
-     */
+    /** Silent probe on launch: if consent already exists, the UI skips sign-in. */
     private fun refreshAuthorization() = viewModelScope.launch {
         when (val outcome = graph.auth.authorize()) {
-            is AuthProvider.Outcome.Granted -> {
-                graph.settingsStore.setSetupRequired(false)
-                transient.update { it.copy(authorized = true) }
-                loadLists()
-            }
+            is AuthProvider.Outcome.Granted -> onAuthorized()
 
             is AuthProvider.Outcome.Failed ->
                 if (outcome.notRegistered) graph.settingsStore.setSetupRequired(true)
@@ -93,11 +87,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun signIn() = viewModelScope.launch {
         transient.update { it.copy(busy = true, message = null) }
         when (val outcome = graph.auth.authorize()) {
-            is AuthProvider.Outcome.Granted -> {
-                graph.settingsStore.setSetupRequired(false)
-                transient.update { it.copy(authorized = true, busy = false) }
-                loadLists()
-            }
+            is AuthProvider.Outcome.Granted -> onAuthorized()
 
             is AuthProvider.Outcome.ConsentRequired -> {
                 transient.update { it.copy(busy = false) }
@@ -133,9 +123,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val direct = data?.let { graph.auth.tokenFromConsent(it) }
             if (direct?.isSuccess == true || graph.auth.silentToken() != null) {
-                graph.settingsStore.setSetupRequired(false)
-                transient.update { it.copy(authorized = true) }
-                loadLists()
+                onAuthorized()
                 return@launch
             }
 
@@ -158,6 +146,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun consentLaunchFailed() {
         _consentRequest.value = null
         transient.update { it.copy(message = str(R.string.msg_consent_launch_failed)) }
+    }
+
+    private suspend fun onAuthorized() {
+        graph.settingsStore.setSetupRequired(false)
+        transient.update { it.copy(authorized = true, busy = false) }
+        loadLists()
     }
 
     private suspend fun loadLists() {
@@ -201,10 +195,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setWallpaperEnabled(value: Boolean) = viewModelScope.launch {
         graph.settingsStore.setWallpaperEnabled(value)
-        graph.invalidateWallpaper()
-        redrawFromCache()
         if (value) {
+            graph.invalidateWallpaper()
+            redrawFromCache()
             transient.update { it.copy(message = str(R.string.msg_wallpaper_enabled)) }
+        } else {
+            // Switching the surface off used to leave Ardoise's last bitmap on
+            // the lock screen for good.
+            graph.repository.releaseWallpaper()
+            transient.update { it.copy(message = str(R.string.msg_wallpaper_released)) }
         }
     }
 
@@ -214,23 +213,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         transient.update { it.copy(busy = false, message = outcome.toMessage()) }
     }
 
-    fun completeTask(taskId: String) = viewModelScope.launch {
-        transient.update { it.copy(busy = true) }
-        val outcome = graph.repository.completeTask(taskId)
-        transient.update { it.copy(busy = false, message = outcome.toMessage()) }
-    }
-
     fun dismissMessage() = transient.update { it.copy(message = null) }
 
     /**
-     * Re-reads the state Android owns: the notification permission, which the
-     * user can flip in system settings while the app sits in the background.
-     *
-     * [MutableStateFlow] conflates equal values, so re-emitting a copy of the
-     * same state would be swallowed; the counter forces the emission.
+     * Re-reads the state Android owns: whether the notification can actually
+     * appear. The user can flip it in system settings, or block the channel
+     * from the notification itself, while the app sits in the background.
      */
     fun refreshSystemState() {
-        transient.update { it.copy(permissionEpoch = it.permissionEpoch + 1) }
+        val allowed = !graph.notifications.isBlocked()
+        transient.update { it.copy(notificationsAllowed = allowed) }
         viewModelScope.launch { redrawFromCache() }
     }
 
@@ -246,9 +238,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         graph.repository.refreshSurfacesFromCache()
     }
 
-    private fun notificationsAllowed(): Boolean =
-        NotificationManagerCompat.from(getApplication()).areNotificationsEnabled()
-
     private fun str(@StringRes id: Int, vararg args: Any): String =
         getApplication<Application>().getString(id, *args)
 
@@ -256,6 +245,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         is SyncOutcome.Success -> null
         SyncOutcome.NotConfigured -> str(R.string.msg_not_configured)
         SyncOutcome.NeedsSignIn -> str(R.string.msg_sign_in_needed)
+        SyncOutcome.ListGone -> str(R.string.msg_list_gone)
         is SyncOutcome.Failed -> str(R.string.msg_sync_failed, error.message.orEmpty())
     }
 
@@ -263,12 +253,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val lists: List<TaskListDto> = emptyList(),
         val authorized: Boolean = false,
         val busy: Boolean = false,
+        val notificationsAllowed: Boolean = true,
         val message: String? = null,
-        /** Bumped to force a re-read of state Android owns, not this class. */
-        val permissionEpoch: Int = 0,
     )
-
-    private fun MutableStateFlow<TransientState>.update(block: (TransientState) -> TransientState) {
-        value = block(value)
-    }
 }

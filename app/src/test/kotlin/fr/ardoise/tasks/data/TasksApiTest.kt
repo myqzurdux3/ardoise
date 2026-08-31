@@ -93,10 +93,57 @@ class TasksApiTest {
     }
 
     @Test
-    fun `a 403 is also treated as an auth failure`() = runTest {
-        server.enqueue(MockResponse().setResponseCode(403).setBody("nope"))
+    fun `a plain 403 is treated as an auth failure`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(403).setBody("""{"error":{"message":"forbidden"}}"""))
 
         assertTrue(runCatching { api.lists("T") }.exceptionOrNull() is AuthExpiredException)
+    }
+
+    /**
+     * Google reuses 403 for quota as well as for a revoked grant. Calling every
+     * 403 an auth failure told the user to sign in again while their session
+     * was fine, and marked the outcome unretryable so the sync never backed off.
+     */
+    @Test
+    fun `a 403 for a rate limit stays retryable rather than looking like a sign-out`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(403).setBody(
+                """{"error":{"errors":[{"reason":"rateLimitExceeded"}],"message":"Rate Limit Exceeded"}}"""
+            )
+        )
+
+        val error = runCatching { api.lists("T") }.exceptionOrNull()
+
+        assertTrue(error is ApiException)
+        assertTrue(error !is AuthExpiredException)
+    }
+
+    @Test
+    fun `a 403 for exceeded quota is also retryable`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(403)
+                .setBody("""{"error":{"errors":[{"reason":"quotaExceeded"}]}}""")
+        )
+
+        assertTrue(runCatching { api.lists("T") }.exceptionOrNull() !is AuthExpiredException)
+    }
+
+    /** A deleted list must be distinguishable, so the selection can be cleared. */
+    @Test
+    fun `a 404 is surfaced as not found`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(404).setBody("gone"))
+
+        assertTrue(runCatching { api.tasks("T", "missing") }.exceptionOrNull() is NotFoundException)
+    }
+
+    @Test
+    fun `a list id is path-encoded rather than splicing into the path`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"items":[]}"""))
+
+        api.tasks("T", "a/b")
+
+        val path = server.takeRequest().path!!
+        assertTrue(path.contains("a%2Fb"))
     }
 
     @Test

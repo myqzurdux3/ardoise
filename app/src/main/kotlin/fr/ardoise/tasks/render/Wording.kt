@@ -26,6 +26,7 @@ data class Wording(
     val countTaskOne: String,
     val countTaskMany: String,
     val countOverdue: String,
+    val countAndMore: String,
     val stampAwaitingSync: String,
     val stampSyncedAt: String,
     val stampOfflineAt: String,
@@ -34,6 +35,9 @@ data class Wording(
         if (total == 1) countTaskOne else countTaskMany.format(total)
 
     fun overdueCount(total: Int): String = countOverdue.format(total)
+
+    /** Shown as the last body line when the list is longer than the display limit. */
+    fun andMore(hidden: Int): String = countAndMore.format(hidden)
 
     fun syncedAt(time: String): String = stampSyncedAt.format(time)
 
@@ -50,6 +54,7 @@ data class Wording(
             countTaskOne = context.getString(R.string.count_task_one),
             countTaskMany = context.getString(R.string.count_task_many),
             countOverdue = context.getString(R.string.count_overdue),
+            countAndMore = context.getString(R.string.count_and_more),
             stampAwaitingSync = context.getString(R.string.stamp_awaiting_sync),
             stampSyncedAt = context.getString(R.string.stamp_synced_at),
             stampOfflineAt = context.getString(R.string.stamp_offline_at),

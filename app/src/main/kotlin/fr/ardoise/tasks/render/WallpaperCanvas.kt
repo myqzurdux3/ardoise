@@ -9,10 +9,8 @@ import android.graphics.Typeface
 import android.text.TextPaint
 import android.text.TextUtils
 import fr.ardoise.tasks.domain.RenderSnapshot
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /**
  * Draws a snapshot onto a bitmap sized for the lock screen.
@@ -33,6 +31,7 @@ object WallpaperCanvas {
     private const val TASK_SIZE = 0.0205f
     private const val FOOTER_SIZE = 0.0125f
     private const val BULLET_RADIUS = 0.0026f
+
     /** Clear of the gesture bar, which sits over the bottom of the wallpaper. */
     private const val FOOTER_BASELINE = 0.90f
 
@@ -41,9 +40,13 @@ object WallpaperCanvas {
         width: Int,
         height: Int,
         wording: Wording,
+        limit: Int,
         today: LocalDate = LocalDate.now(),
         zone: ZoneId = ZoneId.systemDefault(),
     ): Bitmap {
+        // Not the core-ktx createBitmap extension: that artifact was dropped,
+        // and pulling it back for one call site would cost more than it saves.
+        @Suppress("UseKtx")
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         drawBackground(canvas, width, height)
@@ -54,39 +57,42 @@ object WallpaperCanvas {
 
         cursor = drawHeader(canvas, snapshot, margin, cursor, available, height, wording)
 
-        if (snapshot == null || snapshot.isEmpty) {
-            drawEmptyState(canvas, margin, cursor, height, wording)
-            return bitmap
+        val tasks = snapshot?.tasks.orEmpty().take(limit)
+        if (tasks.isEmpty()) {
+            val paint = textPaint(height * TASK_SIZE, ArdoisePalette.CHALK_DIM, "sans-serif")
+            canvas.drawText(wording.nothingPending, margin, cursor, paint)
+        } else {
+            val taskPaint = textPaint(height * TASK_SIZE, ArdoisePalette.CHALK, "sans-serif")
+            val overduePaint = textPaint(height * TASK_SIZE, ArdoisePalette.OCHRE_SOFT, "sans-serif")
+            val bulletPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+            val bulletInset = width * 0.028f
+            val textInset = margin + bulletInset * 1.9f
+
+            tasks.forEach { task ->
+                val overdue = task.isOverdue(today)
+                val paint = if (overdue) overduePaint else taskPaint
+                bulletPaint.color = if (overdue) ArdoisePalette.OCHRE else ArdoisePalette.CHALK_DIM
+
+                canvas.drawCircle(
+                    margin + bulletInset * 0.6f,
+                    cursor - height * TASK_SIZE * 0.32f,
+                    height * BULLET_RADIUS,
+                    bulletPaint,
+                )
+
+                val label = TextUtils.ellipsize(
+                    task.title,
+                    paint,
+                    available - bulletInset * 1.9f,
+                    TextUtils.TruncateAt.END,
+                )
+                canvas.drawText(label, 0, label.length, textInset, cursor, paint)
+                cursor += height * LINE_HEIGHT
+            }
         }
 
-        val taskPaint = textPaint(height * TASK_SIZE, ArdoisePalette.CHALK, "sans-serif")
-        val overduePaint = textPaint(height * TASK_SIZE, ArdoisePalette.OCHRE_SOFT, "sans-serif")
-        val bulletPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val bulletInset = width * 0.028f
-        val textInset = margin + bulletInset * 1.9f
-
-        snapshot.tasks.forEach { task ->
-            val overdue = task.isOverdue(today)
-            val paint = if (overdue) overduePaint else taskPaint
-            bulletPaint.color = if (overdue) ArdoisePalette.OCHRE else ArdoisePalette.CHALK_DIM
-
-            canvas.drawCircle(
-                margin + bulletInset * 0.6f,
-                cursor - height * TASK_SIZE * 0.32f,
-                height * BULLET_RADIUS,
-                bulletPaint,
-            )
-
-            val label = TextUtils.ellipsize(
-                task.title,
-                paint,
-                available - bulletInset * 1.9f,
-                TextUtils.TruncateAt.END,
-            )
-            canvas.drawText(label, 0, label.length, textInset, cursor, paint)
-            cursor += height * LINE_HEIGHT
-        }
-
+        // Always drawn, including on an empty list: without it a two-day-old
+        // "Nothing pending." is indistinguishable from a fresh one.
         drawFooter(canvas, snapshot, margin, height, zone, wording)
         return bitmap
     }
@@ -117,12 +123,11 @@ object WallpaperCanvas {
         height: Int,
         wording: Wording,
     ): Float {
-        val title = snapshot?.listTitle?.takeIf { it.isNotBlank() } ?: wording.appName
         val headerPaint = textPaint(height * TITLE_SIZE, ArdoisePalette.OCHRE, "sans-serif-medium").apply {
             letterSpacing = 0.22f
         }
         val label = TextUtils.ellipsize(
-            title.uppercase(),
+            NotificationText.title(snapshot, wording).uppercase(),
             headerPaint,
             available,
             TextUtils.TruncateAt.END,
@@ -140,20 +145,9 @@ object WallpaperCanvas {
         return ruleY + height * 0.038f
     }
 
-    private fun drawEmptyState(
-        canvas: Canvas,
-        margin: Float,
-        top: Float,
-        height: Int,
-        wording: Wording,
-    ) {
-        val paint = textPaint(height * TASK_SIZE, ArdoisePalette.CHALK_DIM, "sans-serif")
-        canvas.drawText(wording.nothingPending, margin, top, paint)
-    }
-
     private fun drawFooter(
         canvas: Canvas,
-        snapshot: RenderSnapshot,
+        snapshot: RenderSnapshot?,
         margin: Float,
         height: Int,
         zone: ZoneId,
@@ -163,15 +157,7 @@ object WallpaperCanvas {
             alpha = 130
             letterSpacing = 0.08f
         }
-        val stamp = if (snapshot.syncedAtEpochMs <= 0L) {
-            wording.stampAwaitingSync
-        } else {
-            val time = Instant.ofEpochMilli(snapshot.syncedAtEpochMs)
-                .atZone(zone)
-                .format(DateTimeFormatter.ofPattern("HH:mm"))
-            if (snapshot.stale) wording.offlineAt(time) else wording.syncedAt(time)
-        }
-        canvas.drawText(stamp, margin, height * FOOTER_BASELINE, paint)
+        canvas.drawText(SyncStamp.of(snapshot, wording, zone), margin, height * FOOTER_BASELINE, paint)
     }
 
     private fun textPaint(size: Float, color: Int, family: String): TextPaint =

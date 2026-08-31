@@ -17,6 +17,7 @@ internal fun testWording() = Wording(
     countTaskOne = "1 task",
     countTaskMany = "%1\$d tasks",
     countOverdue = "%1\$d overdue",
+    countAndMore = "%1\$d more",
     stampAwaitingSync = "waiting for first sync",
     stampSyncedAt = "at %1\$s",
     stampOfflineAt = "offline, %1\$s",

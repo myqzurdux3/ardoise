@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Settings are worth carrying to a new device; the cached task list is not.
+  Backing up datastore/ wholesale would ship the user's task titles to Google's
+  backup servers, which contradicts what the app tells them on its own screen.
+  DataStore keeps everything in one Preferences file, so the exclusion has to be
+  the whole file: a fresh install re-syncs from Google in seconds anyway.
+-->
 <full-backup-content>
-    <include domain="file" path="datastore/" />
+    <exclude domain="file" path="datastore/" />
 </full-backup-content>

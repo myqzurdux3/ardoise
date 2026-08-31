@@ -1,10 +1,8 @@
 package fr.ardoise.tasks.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -12,15 +10,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import fr.ardoise.tasks.render.ArdoisePalette
 
-val Slate = Color(ArdoisePalette.SLATE_L)
-val SlateDeep = Color(ArdoisePalette.SLATE_DEEP_L)
-val SlateRaised = Color(ArdoisePalette.SLATE_RAISED_L)
-val Chalk = Color(ArdoisePalette.CHALK_L)
-val ChalkDim = Color(ArdoisePalette.CHALK_DIM_L)
-val Ochre = Color(ArdoisePalette.OCHRE_L)
-val OchreSoft = Color(ArdoisePalette.OCHRE_SOFT_L)
+val Slate = Color(ArdoisePalette.SLATE_RAISED)
+val SlateDeep = Color(ArdoisePalette.SLATE_DEEP)
+val SlateRaised = Color(ArdoisePalette.SLATE_RAISED)
+val Chalk = Color(ArdoisePalette.CHALK)
+val ChalkDim = Color(ArdoisePalette.CHALK_DIM)
+val Ochre = Color(ArdoisePalette.OCHRE)
+val OchreSoft = Color(ArdoisePalette.OCHRE_SOFT)
 
-private val ArdoiseDark = darkColorScheme(
+/**
+ * One scheme, used in both system themes.
+ *
+ * Ardoise is a preview of a lock screen, which is always dark; showing it on a
+ * white sheet would misrepresent what the user is configuring. There used to be
+ * a near-identical `lightColorScheme` copy alongside this one, which was worse
+ * than redundant: every role it did not name kept a *light* default, so
+ * components the app never styles explicitly -- the snackbar, the surface
+ * containers -- flipped appearance with the system theme.
+ */
+private val ArdoiseScheme = darkColorScheme(
     primary = Ochre,
     onPrimary = SlateDeep,
     primaryContainer = SlateRaised,
@@ -29,35 +37,12 @@ private val ArdoiseDark = darkColorScheme(
     onSecondary = SlateDeep,
     background = SlateDeep,
     onBackground = Chalk,
-    surface = Slate,
+    surface = Color(0xFF1C1E21),
     onSurface = Chalk,
     surfaceVariant = SlateRaised,
     onSurfaceVariant = ChalkDim,
-    outline = Color(0x33F2EFE9),
-    outlineVariant = Color(0x1FF2EFE9),
-    error = Color(0xFFE0745F),
-    onError = SlateDeep,
-)
-
-/**
- * Ardoise keeps its slate palette in light mode too.
- *
- * The app is a preview of a lock screen that is always dark; showing it on a
- * white sheet would misrepresent what the user is about to configure.
- */
-private val ArdoiseLight = lightColorScheme(
-    primary = Ochre,
-    onPrimary = Chalk,
-    primaryContainer = SlateRaised,
-    onPrimaryContainer = OchreSoft,
-    secondary = OchreSoft,
-    onSecondary = SlateDeep,
-    background = SlateDeep,
-    onBackground = Chalk,
-    surface = Slate,
-    onSurface = Chalk,
-    surfaceVariant = SlateRaised,
-    onSurfaceVariant = ChalkDim,
+    inverseSurface = Chalk,
+    inverseOnSurface = SlateDeep,
     outline = Color(0x33F2EFE9),
     outlineVariant = Color(0x1FF2EFE9),
     error = Color(0xFFE0745F),
@@ -75,12 +60,9 @@ private val ArdoiseTypography = Typography(
 )
 
 @Composable
-fun ArdoiseTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
+fun ArdoiseTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = if (darkTheme) ArdoiseDark else ArdoiseLight,
+        colorScheme = ArdoiseScheme,
         typography = ArdoiseTypography,
         content = content,
     )

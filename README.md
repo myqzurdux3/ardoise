@@ -47,7 +47,7 @@ Ardoise drives both surfaces from one source.
   </tr>
 </table>
 
-<sub>Real screenshots, Pixel 9a on Android 16 (API 37).</sub>
+<sub>Real screenshots, Pixel 9a on Android 17 (API 37), shown in French.</sub>
 
 ## What Ardoise does
 
@@ -56,8 +56,9 @@ Ardoise drives both surfaces from one source.
 - Lets you tick the first task off **from the locked screen**, without
   unlocking the phone.
 - Keeps working offline and after a reboot, from a local cache.
-- Stores **no access token** and contains **no client secret**. Nothing leaves
-  your phone except the calls to Google's API.
+- Stores **no access token** and contains **no client secret**. The only
+  network destination is Google's own API, and the cached list is excluded from
+  cloud backup and device transfer, so task titles stay on the device.
 - Speaks **English and French**, following the system language. English is the
   default locale, and therefore the fallback for every other language.
 
@@ -98,7 +99,9 @@ Pixel 9a, and then deleted.
 
 ```bash
 git clone https://github.com/myqzurdux3/ardoise && cd ardoise
-echo "sdk.dir=$ANDROID_HOME" > local.properties
+# ANDROID_HOME must point at your SDK; Android Studio writes this file for you
+# if you open the project instead.
+echo "sdk.dir=${ANDROID_HOME:?set ANDROID_HOME to your Android SDK path}" > local.properties
 ./gradlew :app:installDebug
 ```
 
@@ -202,15 +205,21 @@ app shows a "Google hasn't verified this app" interstitial that you pass via
 ## Architecture
 
 ```
-  UI (Compose)          HomeScreen, LockPreview, HomeViewModel
-        |
-  Domain                TaskRepository, RenderSnapshot, SnapshotMapper
-        |
-  Data                  TasksApi (REST), AuthProvider, SettingsStore, SnapshotStore
+  ui       HomeScreen, LockPreview, HomeViewModel, MainActivity
+  domain   TaskRepository, RenderSnapshot, SnapshotMapper
+  data     TasksApi (REST), SettingsStore, SnapshotStore
+  auth     AuthProvider, SigningIdentity
+  render   SurfaceRenderer, NotificationRenderer, WallpaperRenderer,
+           WallpaperCanvas, NotificationText, SyncStamp, Wording
+  work     SyncWorker, DayRolloverWorker, SyncScheduler,
+           TaskActionReceiver, BootReceiver
 ```
 
-Both renderers consume the same `RenderSnapshot` and know nothing of the
-network, of authentication, or of storage.
+`render` is where the app earns its keep: both surfaces are drawn there, from
+one `RenderSnapshot`. Neither renderer knows the network or authentication;
+`WallpaperRenderer` keeps a single storage key, to avoid repainting a bitmap
+that has not changed. See [docs/design-notes.md](docs/design-notes.md) for the
+layering and the reasoning behind it.
 
 | Choice | Why |
 |---|---|
@@ -231,16 +240,17 @@ on the lock screen — not one line of text survives. The right combination is
 `IMPORTANCE_DEFAULT` with the sound muted at channel level: still no sound, no
 vibration, no heads-up banner, but the notification stays expandable and ranked.
 
-**2. The wallpaper is requested at double width.**
-The system here asks for a 4848 × 2424 wallpaper for a 1080 × 2424 screen —
-the width is doubled for home screen parallax. A screen-sized bitmap gets
-scaled to fill it and the composition breaks. Passing a `visibleCropHint`
-covering the whole bitmap pins it to the screen.
+**2. The wallpaper is requested far wider than the screen.**
+The system here asks for a 4848 × 2424 canvas for a 1080 × 2424 screen — twice
+the longest side, so the home screen can parallax and so the image survives
+rotation. A screen-sized bitmap gets scaled to fill it and the composition
+breaks. Passing a `visibleCropHint` covering the whole bitmap pins it to the
+screen.
 
 ## The app
 
 <p align="center">
-  <img src="art/screen-app.png" alt="Ardoise settings screen" width="300">
+  <img src="art/screen-app.png" alt="The live lock screen preview in Ardoise" width="300">
 </p>
 
 One screen. It shows a live preview of what the lock screen will look like —
@@ -249,13 +259,15 @@ the only honest way to tune a surface you cannot see while configuring it.
 ## Development
 
 ```bash
-./gradlew :app:testDebugUnitTest   # 38 unit tests
+./gradlew :app:testDebugUnitTest   # 58 unit tests
 ./gradlew :app:assembleDebug       # debug APK
 ```
 
-The tests cover overdue calculation, API mapping, notification wording, the
-REST client (via `MockWebServer`), the signing fingerprint format, and
-wallpaper rendering (via Robolectric in native graphics mode).
+The tests cover overdue calculation, API mapping and title sanitising,
+notification wording and counts, the REST client and its status handling (via
+`MockWebServer`), the sync stamp, the midnight delay across time zones and a
+daylight-saving night, the signing fingerprint format, and wallpaper rendering
+(via Robolectric in native graphics mode).
 
 The rest was verified on device: both surfaces on a real lock screen, the
 notification expanded with its actions, the permission warning clearing on
@@ -263,10 +275,27 @@ resume, the switch to "offline" when a sync fails, and — on a physical Pixel 9
 with a real Google account — the full authentication path through to reading
 live tasks.
 
+## Permissions
+
+Four, and each is load-bearing:
+
+| Permission | Why |
+|---|---|
+| `INTERNET` | Calling the Google Tasks API. |
+| `POST_NOTIFICATIONS` | The primary surface is a notification. |
+| `SET_WALLPAPER` | Only when the wallpaper surface is switched on. |
+| `RECEIVE_BOOT_COMPLETED` | Restoring both surfaces after a reboot. |
+
+Nothing is exported that another app can drive: the action receiver is
+`exported="false"` and reachable only through Ardoise's own immutable
+`PendingIntent`s.
+
 ## Known limits
 
-1. **Up to 30 minutes of latency** between a change made elsewhere and its
-   appearance. Inherent to polling; can be set to 15 minutes.
+1. **15 to 60 minutes of latency** between a change made elsewhere and its
+   appearance, 30 by default. Inherent to polling — the API offers no push.
+   Day rollover is separate: a worker repaints at local midnight from cache, so
+   "today" and "overdue" stay right even with no network.
 2. **`FLAG_LOCK` is not honoured by every manufacturer.** The failure is
    detected at runtime and the surface disables itself cleanly.
 3. **The lock screen wallpaper is replaced** when that surface is enabled. It

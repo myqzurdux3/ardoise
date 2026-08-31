@@ -12,6 +12,7 @@ import fr.ardoise.tasks.domain.RenderSnapshot
 import fr.ardoise.tasks.ui.MainActivity
 import fr.ardoise.tasks.work.TaskActionReceiver
 import java.time.LocalDate
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The primary surface.
@@ -22,8 +23,18 @@ import java.time.LocalDate
  */
 class NotificationRenderer(private val context: Context) {
 
+    private val channelReady = AtomicBoolean(false)
+
+    /**
+     * Creates the channel once per process rather than on every render, so the
+     * one-shot migration below does not re-run for the life of the install.
+     */
     fun ensureChannel() {
-        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        if (!channelReady.compareAndSet(false, true)) return
+        val manager = context.getSystemService(NotificationManager::class.java) ?: run {
+            channelReady.set(false)
+            return
+        }
 
         // IMPORTANCE_LOW looks like the obvious choice for a silent, permanent
         // notification -- and it defeats the point. Android files LOW under
@@ -49,25 +60,46 @@ class NotificationRenderer(private val context: Context) {
         manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
     }
 
-    fun render(snapshot: RenderSnapshot?, today: LocalDate = LocalDate.now()) {
+    /**
+     * True when this surface can actually appear.
+     *
+     * The app-level permission is not enough: long-pressing the notification and
+     * choosing "turn off notifications" blocks the *channel*, after which
+     * `notify` succeeds and shows nothing. Without this check the app would
+     * report everything as fine while its main surface had silently vanished.
+     */
+    fun isBlocked(): Boolean {
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return true
+        ensureChannel()
+        val channel = context.getSystemService(NotificationManager::class.java)
+            ?.getNotificationChannel(CHANNEL_ID)
+        return channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE
+    }
+
+    fun render(
+        snapshot: RenderSnapshot?,
+        limit: Int,
+        today: LocalDate = LocalDate.now(),
+    ) {
         ensureChannel()
         val manager = NotificationManagerCompat.from(context)
         if (!manager.areNotificationsEnabled()) return
 
         // Resolved per render, so a language change applies without a restart.
         val wording = Wording.from(context)
+        val heading = NotificationText.title(snapshot, wording)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(NotificationText.title(snapshot, wording))
+            .setContentTitle(heading)
             // Collapsed on the lock screen: the next task, not a bare count.
             .setContentText(NotificationText.collapsedLine(snapshot, today, wording))
             // In the header line, so the count survives expansion either way.
             .setSubText(NotificationText.summary(snapshot, today, wording))
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .setBigContentTitle(NotificationText.title(snapshot, wording))
-                    .bigText(NotificationText.body(snapshot, today, wording))
+                    .setBigContentTitle(heading)
+                    .bigText(NotificationText.body(snapshot, today, wording, limit))
             )
             .setColor(ArdoisePalette.OCHRE)
             .setOngoing(true)
@@ -122,10 +154,10 @@ class NotificationRenderer(private val context: Context) {
         )
     }
 
-    companion object {
+    private companion object {
         const val CHANNEL_ID = "ardoise_tasks_visible"
-        private const val LEGACY_CHANNEL_ID = "ardoise_tasks"
+        const val LEGACY_CHANNEL_ID = "ardoise_tasks"
         const val NOTIFICATION_ID = 1001
-        private const val REQUEST_OPEN = 900
+        const val REQUEST_OPEN = 900
     }
 }

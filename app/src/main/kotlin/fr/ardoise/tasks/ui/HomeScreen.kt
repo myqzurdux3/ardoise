@@ -3,6 +3,8 @@ package fr.ardoise.tasks.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,10 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -37,7 +37,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -139,7 +141,11 @@ fun HomeScreen(
                 )
                 Spacer(Modifier.height(14.dp))
                 OutlinedButton(onClick = onRefresh, enabled = !state.busy) {
-                    Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        painterResource(R.drawable.ic_refresh),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.action_refresh_now))
                 }
@@ -244,7 +250,7 @@ private fun CopyableValue(
             enabled = enabled,
         ) {
             Icon(
-                Icons.Rounded.ContentCopy,
+                painterResource(R.drawable.ic_copy),
                 contentDescription = stringResource(R.string.action_copy),
                 tint = Ochre,
                 modifier = Modifier.size(18.dp),
@@ -371,11 +377,11 @@ private fun ToggleRow(
 }
 
 @Composable
-private fun <T> ChipRow(
-    options: List<T>,
-    selected: T,
-    label: @Composable (T) -> String,
-    onSelect: (T) -> Unit,
+private fun ChipRow(
+    options: List<Int>,
+    selected: Int,
+    label: @Composable (Int) -> String,
+    onSelect: (Int) -> Unit,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { option ->
@@ -396,3 +402,30 @@ private fun chipColors() = FilterChipDefaults.filterChipColors(
     selectedContainerColor = Ochre,
     selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
 )
+
+/**
+ * The card shell every section on this screen uses. It lives here rather than
+ * beside the lock screen preview, which is where it happened to be written.
+ */
+@Composable
+fun SectionCard(
+    title: String,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
+            .padding(horizontal = 18.dp, vertical = 16.dp)
+    ) {
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(14.dp))
+        content()
+    }
+}
