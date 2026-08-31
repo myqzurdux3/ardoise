@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -39,3 +42,19 @@ jobs:
           name: test-report
           path: app/build/reports/tests/testDebugUnitTest
           if-no-files-found: ignore
+
+  vulnerabilities:
+    name: Dependency vulnerabilities
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      # A real scanner, because a human reading version numbers cannot
+      # honestly say whether a dependency carries a known CVE.
+      - name: OSV-Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v2.2.4
+        with:
+          scan-args: |-
+            --lockfile=./gradle/libs.versions.toml

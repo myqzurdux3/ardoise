@@ -299,7 +299,14 @@ Nothing is exported that another app can drive: the action receiver is
 2. **`FLAG_LOCK` is not honoured by every manufacturer.** The failure is
    detected at runtime and the surface disables itself cleanly.
 3. **The lock screen wallpaper is replaced** when that surface is enabled. It
-   is off by default for exactly that reason.
+   is off by default for exactly that reason. Switching it back off restores
+   the system wallpaper.
+4. **One page of 100 open tasks** is fetched per sync. Ardoise draws at most
+   ten lines, so this only shows up in the notification's count, which stops
+   being exact beyond a hundred open tasks in one list.
+5. **Completing a task from the lock screen is queued, not instant.** The work
+   waits for a network connection and the notification does not acknowledge the
+   tap, so on a dead connection nothing visibly happens until signal returns.
 
 ## The name
 
