@@ -54,6 +54,13 @@ android {
     }
 }
 
+// Locking the shipped classpath does two things: it makes resolution
+// reproducible, and it produces the gradle.lockfile that OSV-Scanner needs --
+// the version catalogue alone is not a lockfile and no scanner can read it.
+configurations.matching { it.name == "releaseRuntimeClasspath" }.configureEach {
+    resolutionStrategy.activateDependencyLocking()
+}
+
 dependencies {
     implementation(libs.androidx.core)
     // Declared rather than relied on transitively: LocalLifecycleOwner and the
