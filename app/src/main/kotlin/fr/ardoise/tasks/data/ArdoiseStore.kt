@@ -131,6 +131,25 @@ class SnapshotStore(private val context: Context) {
         context.ardoiseDataStore.edit { it[KEY_SNAPSHOT] = json.encodeToString(value) }
     }
 
+    /**
+     * Drops one task from the cached list and returns what is now stored.
+     *
+     * A single `edit` for the same reason [markStale] is one: a read followed
+     * by a separate write can lose a concurrent worker's result.
+     */
+    suspend fun removeTask(taskId: String): RenderSnapshot? {
+        var result: RenderSnapshot? = null
+        context.ardoiseDataStore.edit { prefs ->
+            val existing = prefs[KEY_SNAPSHOT]?.let(::decode)
+            val reduced = existing?.without(taskId)
+            result = reduced
+            if (reduced != null && reduced !== existing) {
+                prefs[KEY_SNAPSHOT] = json.encodeToString(reduced)
+            }
+        }
+        return result
+    }
+
     suspend fun clear() {
         context.ardoiseDataStore.edit { it.remove(KEY_SNAPSHOT) }
     }

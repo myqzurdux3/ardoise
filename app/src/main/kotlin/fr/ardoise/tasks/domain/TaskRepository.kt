@@ -98,6 +98,25 @@ class TaskRepository(
     }
 
     /**
+     * Takes a ticked-off task off the lock screen immediately, before Google
+     * has been told.
+     *
+     * Completing used to only enqueue work behind a network constraint, so on a
+     * dead connection the tap produced nothing at all: the task stayed, first in
+     * the list, and people tapped it again and again. Removing it from the cache
+     * and redrawing needs no network, so the disappearing line *is* the
+     * acknowledgement.
+     *
+     * If the call to Google never lands, the next successful sync brings the
+     * task back -- the server is still the source of truth, this only borrows
+     * against it.
+     */
+    suspend fun acknowledgeCompletion(taskId: String) {
+        val settings = settingsStore.current()
+        surfaces.refresh(snapshotStore.removeTask(taskId), settings)
+    }
+
+    /**
      * Redraws from cache alone, for boot, for a new day, and for settings changes.
      *
      * A snapshot left over from a previously selected list is discarded rather

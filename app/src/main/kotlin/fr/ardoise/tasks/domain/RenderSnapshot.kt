@@ -25,6 +25,18 @@ data class RenderSnapshot(
 
     fun take(limit: Int): RenderSnapshot = copy(tasks = tasks.take(limit))
 
+    /**
+     * The same list without one task.
+     *
+     * Used to take a ticked-off task off the lock screen the instant it is
+     * tapped, before Google has been told. Returns the same instance when the
+     * id is not present, so callers can skip a pointless write and redraw.
+     */
+    fun without(taskId: String): RenderSnapshot {
+        if (tasks.none { it.id == taskId }) return this
+        return copy(tasks = tasks.filterNot { it.id == taskId })
+    }
+
     /** Identity of the rendered content, used to skip redundant redraws. */
     fun contentKey(today: LocalDate): String =
         buildString {
